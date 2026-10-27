@@ -1,0 +1,2032 @@
+<!doctype html>
+<html lang="es">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="stylesheet" href="css/leaflet.css">
+        <link rel="stylesheet" href="css/L.Control.Layers.Tree.css">
+        <link rel="stylesheet" href="css/L.Control.Locate.min.css">
+        <link rel="stylesheet" href="css/qgis2web.css">
+        <link rel="stylesheet" href="css/fontawesome-all.min.css">
+        <link rel="stylesheet" href="css/leaflet-search.css">
+        <link rel="stylesheet" href="css/leaflet.photon.css">
+        <link rel="stylesheet" href="css/leaflet-measure.css">
+        <link rel="stylesheet" href="css/fichas_guadix.css">
+        <style>
+        :root {
+            --bg: #f3f6f4;
+            --card: rgba(255,255,255,0.94);
+            --card-strong: rgba(255,255,255,0.98);
+            --border: rgba(18, 66, 43, 0.12);
+            --text: #203328;
+            --muted: #6e7f75;
+            --accent: #2f7d5a;
+            --accent-dark: #215b41;
+            --accent-soft: #e7f3ed;
+            --shadow: 0 18px 40px rgba(30, 55, 43, 0.12);
+            --radius: 18px;
+        }
+
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+            font-family: Inter, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        body {
+            overflow: hidden;
+        }
+
+        #map {
+            position: absolute;
+            inset: 0;
+            background: #dde6df;
+        }
+
+        .ui-card {
+            background: var(--card);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        #appHeader {
+            position: absolute;
+            top: 18px;
+            left: 18px;
+            z-index: 1100;
+            padding: 16px 20px;
+            min-width: 320px;
+            max-width: min(560px, calc(100vw - 36px));
+        }
+
+        #appHeader h1 {
+            margin: 0 0 4px 0;
+            font-size: 20px;
+            line-height: 1.2;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+        }
+
+        #appHeader p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.45;
+        }
+
+        #panelToggle {
+            position: absolute;
+            top: 100px;
+            left: 18px;
+            z-index: 1100;
+            border: none;
+            background: var(--accent);
+            color: white;
+            border-radius: 999px;
+            padding: 10px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 8px 18px rgba(47,125,90,.25);
+        }
+
+        #panelToggle:hover { background: var(--accent-dark); }
+
+        #sidePanel {
+            position: absolute;
+            top: 145px;
+            left: 18px;
+            bottom: 18px;
+            width: 378px;
+            box-sizing: border-box;
+            z-index: 1090;
+            padding: 18px;
+            overflow: auto;
+            transition: transform .28s ease, opacity .28s ease;
+        }
+
+        #sidePanel.collapsed {
+            transform: translateX(calc(-100% - 22px));
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .panel-section + .panel-section {
+            margin-top: 18px;
+            padding-top: 18px;
+            border-top: 1px solid rgba(32,51,40,.08);
+        }
+
+        .section-title {
+            margin: 0 0 12px 0;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: .2px;
+        }
+
+        .field {
+            margin-bottom: 12px;
+        }
+
+        .field label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--muted);
+            letter-spacing: .2px;
+        }
+
+        .field input,
+        .field select {
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid rgba(32,51,40,.12);
+            background: var(--card-strong);
+            border-radius: 12px;
+            padding: 10px 12px;
+            font-size: 13px;
+            color: var(--text);
+            outline: none;
+            transition: border-color .2s ease, box-shadow .2s ease;
+        }
+
+        .field input:focus,
+        .field select:focus {
+            border-color: rgba(47,125,90,.5);
+            box-shadow: 0 0 0 4px rgba(47,125,90,.12);
+        }
+
+        .field-help {
+            margin-top: 5px;
+            color: var(--muted);
+            font-size: 11px;
+        }
+
+        .checkbox-field {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 6px;
+            color: var(--text);
+            font-size: 13px;
+        }
+
+        .checkbox-field input {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--accent);
+        }
+
+        .button-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .btn {
+            border: none;
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform .16s ease, background .16s ease, color .16s ease;
+        }
+
+        .btn:hover { transform: translateY(-1px); }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+            flex: 1;
+        }
+
+        .btn-primary:hover { background: var(--accent-dark); }
+
+        .btn-secondary {
+            background: var(--accent-soft);
+            color: var(--accent-dark);
+            flex: 1;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        .stat-card {
+            background: linear-gradient(180deg, rgba(247,250,248,1) 0%, rgba(236,244,239,1) 100%);
+            border: 1px solid rgba(47,125,90,.10);
+            border-radius: 14px;
+            padding: 12px 14px;
+        }
+
+        .stat-label {
+            display: block;
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .6px;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 22px;
+            font-weight: 800;
+            line-height: 1.15;
+        }
+
+        .legend-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            margin: 0 8px 8px 0;
+            border-radius: 999px;
+            background: #f7faf8;
+            border: 1px solid rgba(32,51,40,.08);
+            font-size: 12px;
+            color: var(--text);
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            display: inline-block;
+        }
+
+        #footerTag {
+            position: absolute;
+            right: 18px;
+            bottom: 18px;
+            z-index: 1100;
+            padding: 10px 14px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .leaflet-top.leaflet-left {
+            top: 70px;
+            left: auto;
+            right: 18px;
+        }
+
+        .leaflet-control {
+            box-shadow: 0 10px 26px rgba(30, 55, 43, 0.14) !important;
+            border: 1px solid rgba(18, 66, 43, 0.12) !important;
+            border-radius: 14px !important;
+            overflow: hidden;
+        }
+
+        .leaflet-bar a,
+        .leaflet-bar a:hover {
+            width: 34px;
+            height: 34px;
+            line-height: 34px;
+            color: var(--text);
+            background: rgba(255,255,255,.95);
+        }
+
+        .leaflet-control-layers,
+        .leaflet-control-search {
+            background: rgba(255,255,255,.96) !important;
+        }
+
+        .leaflet-control-layers-expanded {
+            padding: 12px 14px !important;
+            border-radius: 16px !important;
+        }
+
+        .leaflet-control-search .search-input {
+            border: none !important;
+            padding: 8px 10px !important;
+            min-width: 220px;
+            color: var(--text);
+        }
+
+        .leaflet-control-search .search-button {
+            background-color: rgba(255,255,255,.95) !important;
+        }
+
+        .leaflet-popup-content-wrapper,
+        .leaflet-popup-tip {
+            background: rgba(255,255,255,.98);
+        }
+
+        .leaflet-popup-content table {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 12px;
+        }
+
+        .leaflet-popup-content th,
+        .leaflet-popup-content td {
+            border-bottom: 1px solid rgba(32,51,40,.08);
+            padding: 7px 6px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        .leaflet-popup-content th {
+            color: var(--muted);
+            width: 45%;
+            font-weight: 700;
+        }
+
+        @media (max-width: 820px) {
+            #appHeader {
+                min-width: auto;
+                max-width: calc(100vw - 36px);
+                padding: 14px 16px;
+            }
+
+            #appHeader h1 { font-size: 18px; }
+            #appHeader p { font-size: 12px; }
+
+            #panelToggle {
+                top: 92px;
+            }
+
+            #sidePanel {
+                top: 136px;
+                width: calc(100vw - 36px);
+                max-width: 360px;
+            }
+
+            #footerTag {
+                max-width: calc(100vw - 36px);
+                right: 18px;
+                left: 18px;
+                text-align: center;
+            }
+        }
+
+        /* Equivalencias anuales de la seleccion: iconos SVG sin dependencias nuevas. */
+        .selection-help {
+            margin: -4px 0 12px;
+            font-size: 12px;
+            line-height: 1.5;
+            color: var(--muted);
+        }
+        .impact-card { padding: 16px; }
+        .impact-oxygen {
+            background: linear-gradient(140deg, #eaf6ee 0%, #f8fcf9 100%);
+            border-color: rgba(47,125,90,.22);
+        }
+        .impact-cars {
+            background: linear-gradient(140deg, #ebf3f5 0%, #f8fbfc 100%);
+            border-color: rgba(45,101,121,.20);
+        }
+        .impact-main {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 12px 0;
+        }
+        .impact-icon {
+            flex: 0 0 48px;
+            height: 48px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 14px;
+            background: #d6ebde;
+            color: #215b41;
+        }
+        .impact-cars .impact-icon { background: #d8e9ee; color: #285d70; }
+        .impact-icon svg { width: 32px; height: 32px; }
+        .impact-number-block { min-width: 0; }
+        .impact-value {
+            font-size: 30px;
+            letter-spacing: -.6px;
+            color: var(--accent-dark);
+            font-variant-numeric: tabular-nums;
+            overflow-wrap: anywhere;
+        }
+        .impact-cars .impact-value { color: #285d70; }
+        .impact-unit { margin-top: 3px; font-size: 12px; line-height: 1.4; }
+        .impact-description { margin: 0 0 9px; font-size: 12px; line-height: 1.6; }
+        .impact-description strong { font-size: 14px; font-variant-numeric: tabular-nums; }
+        .impact-reference {
+            padding-top: 9px;
+            border-top: 1px solid rgba(32,51,40,.09);
+            color: #55695d;
+            font-size: 11px;
+            line-height: 1.5;
+        }
+        .stat-note { margin: 7px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+        .data-coverage { margin-top: 8px; color: #805719; font-size: 11px; line-height: 1.5; }
+        .data-coverage[hidden], .factor-error[hidden] { display: none; }
+        .equivalence-methods {
+            margin-top: 12px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px;
+            background: rgba(255,255,255,.65);
+        }
+        .equivalence-methods summary {
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 700;
+            line-height: 1.5;
+            color: var(--accent-dark);
+        }
+        .equivalence-methods p { font-size: 11px; line-height: 1.6; color: #55695d; }
+        .equivalence-methods a { color: var(--accent-dark); text-underline-offset: 2px; }
+        .equivalence-methods .field { margin-top: 14px; margin-bottom: 8px; }
+        .equivalence-methods .field label { line-height: 1.5; }
+        .equivalence-methods .btn { font-size: 11px; padding: 8px 10px; }
+        .equivalence-methods .formula {
+            padding: 9px 10px;
+            border-radius: 8px;
+            background: var(--accent-soft);
+            overflow-wrap: anywhere;
+            font-variant-numeric: tabular-nums;
+        }
+        .factor-error { font-size: 11px; line-height: 1.5; color: #a33129; }
+        #carAnnualEmissions[aria-invalid="true"] { border-color: #a33129; }
+        #sidePanel { scrollbar-width: thin; scrollbar-color: #b1caba transparent; }
+        @media (max-width: 820px) {
+            #appHeader { box-sizing: border-box; }
+            .impact-card { padding: 13px; }
+            .impact-value { font-size: 28px; }
+        }
+
+        /* Layer visibility controls and European car-reference selector. */
+        .car-preset-field { margin: 12px 0 0; }
+        .car-preset-field label { font-size: 11px; line-height: 1.45; color: #285d70; }
+        .car-preset-field select { background: rgba(255,255,255,.8); }
+        .layer-toggles { display: grid; gap: 8px; }
+        .layer-toggle-row {
+            display: flex; align-items: center; gap: 10px;
+            box-sizing: border-box; min-height: 44px; padding: 10px 12px;
+            border: 1px solid var(--border); border-radius: 12px;
+            background: var(--accent-soft); cursor: pointer; font-size: 12px;
+        }
+        .layer-toggle-row[data-visible="false"] { background: #f7faf8; }
+        .layer-toggle-row:hover { border-color: rgba(47,125,90,.42); }
+        .layer-toggle-row:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+        .layer-toggle-row input { width: 17px; height: 17px; margin: 0; accent-color: var(--accent); flex-shrink: 0; }
+        .layer-toggle-row .legend-dot { flex-shrink: 0; }
+        .layer-name { flex: 1; font-weight: 600; }
+        .layer-state { font-size: 10px; color: var(--muted); }
+        #carCustomField[hidden] { display: none; }
+        @media (max-width: 820px) {
+            #sidePanel { box-sizing: border-box; }
+        }
+                /* Local search, species ranking and thematic tree views. */
+        [hidden] { display: none !important; }
+        #sidePanel { scroll-behavior: auto; }
+        .analysis-details { border: 1px solid var(--border); border-radius: 14px; background: #f8fbf9; }
+        .analysis-details > summary { display: flex; align-items: center; gap: 8px; cursor: pointer; list-style: none; padding: 13px; font-size: 13px; font-weight: 750; color: var(--accent-dark); }
+        .analysis-details > summary::-webkit-details-marker { display: none; }
+        .analysis-details > summary::before { content: '\25B8'; font-size: 14px; transition: transform .16s; }
+        .analysis-details[open] > summary::before { transform: rotate(90deg); }
+        .analysis-details > summary:focus-visible { outline: 2px solid var(--accent); border-radius: 12px; }
+        .analysis-details[open] > summary { border-bottom: 1px solid var(--border); }
+        .analysis-body { padding: 13px; }
+        .analysis-body .field label { font-size: 11px; line-height: 1.5; }
+        .analysis-body select { font-size: 12px; padding: 10px; }
+        .analysis-badge { margin-left: auto; background: #e5efe9; border-radius: 999px; padding: 3px 7px; font-size: 10px; white-space: nowrap; }
+        .analysis-description { margin: 0 0 12px; font-size: 11px; line-height: 1.6; color: #5a6d61; }
+        .analysis-caption { margin: 12px 0 0; font-size: 10px; line-height: 1.6; color: #66796d; }
+        .analysis-action { width: 100%; font-size: 11px; min-height: 38px; margin: 8px 0 0; }
+        .ranking-list { padding: 0; margin: 10px 0 0; list-style: none; }
+        .ranking-item + .ranking-item { margin-top: 6px; }
+        .ranking-row { display: flex; align-items: flex-start; gap: 9px; width: 100%; padding: 10px 8px; border: 1px solid transparent; border-radius: 10px; background: #fff; text-align: left; cursor: pointer; color: var(--text); font: inherit; }
+        .ranking-row:hover { border-color: #9ebcac; background: #f1f7f3; }
+        .ranking-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+        .ranking-row[aria-pressed="true"] { border-color: var(--accent); }
+        .ranking-position { display: inline-flex; justify-content: center; align-items: center; flex: 0 0 22px; height: 22px; border-radius: 7px; background: #e9f2ed; color: #38684f; font-size: 11px; font-weight: 800; }
+        .ranking-main { flex: 1; min-width: 0; }
+        .ranking-name { display: block; font-size: 12px; font-weight: 700; line-height: 1.5; overflow-wrap: anywhere; }
+        .ranking-value { display: block; font-size: 14px; font-weight: 800; margin: 3px 0; font-variant-numeric: tabular-nums; }
+        .ranking-meta { display: block; color: #687c70; font-size: 10px; line-height: 1.55; }
+        .ranking-track { display: block; height: 4px; margin-top: 7px; border-radius: 4px; background: #edf2ee; overflow: hidden; }
+        .ranking-fill { display: block; height: 100%; background: #397f5b; border-radius: inherit; }
+        .ranking-empty { padding: 14px 8px; font-size: 12px; line-height: 1.6; color: var(--muted); }
+        .map-view-note { padding: 10px 12px; background: #eef5f0; border-radius: 10px; font-size: 11px; line-height: 1.6; color: #52685a; }
+        .zone-input-wrap { display: flex; align-items: center; border: 1px solid rgba(32,51,40,.16); background: #fff; border-radius: 12px; padding-right: 4px; }
+        .zone-input-wrap:focus-within { border-color: #619b7d; box-shadow: 0 0 0 3px rgba(47,125,90,.10); }
+        .zone-input-wrap svg { width: 17px; height: 17px; margin-left: 11px; flex: 0 0 17px; color: #547560; }
+        .zone-input-wrap input { flex: 1; min-width: 0; border: 0; background: transparent; padding: 12px 8px; box-shadow: none !important; }
+        .zone-input-wrap button { flex: 0 0 32px; width: 32px; height: 34px; border: 0; border-radius: 8px; background: transparent; color: #476750; cursor: pointer; font-size: 17px; }
+        .zone-input-wrap button:hover { background: #edf5f0; }
+        .zone-input-wrap button:focus-visible { outline: 2px solid var(--accent); }
+        .zone-suggestions { position: fixed; z-index: 2500; padding: 5px; border: 1px solid #a9c3b4; border-radius: 12px; box-shadow: 0 12px 30px rgba(20,48,33,.20); background: #fff; box-sizing: border-box; overflow: hidden; }
+        .zone-suggestion-heading { padding: 6px 8px 8px; font-size: 10px; font-weight: 700; color: #758578; border-bottom: 1px solid #edf1ed; }
+        .zone-suggestion-list { position: relative; overflow-y: auto; overscroll-behavior: contain; max-height: 250px; }
+        .zone-option { cursor: pointer; border-radius: 8px; padding: 10px 9px; margin-top: 2px; line-height: 1.5; }
+        .zone-option:hover, .zone-option[aria-selected="true"] { background: #e7f2eb; }
+        .zone-option-name { display: block; font-size: 12px; font-weight: 700; overflow-wrap: anywhere; }
+        .zone-option-meta { display: block; font-size: 10px; color: #6f7f73; }
+        .zone-empty { font-size: 12px; padding: 13px 9px; color: #6f7f73; line-height: 1.6; }
+        .theme-legend { position: absolute; bottom: 30px; right: 18px; z-index: 1050; width: 255px; padding: 13px 14px; box-sizing: border-box; pointer-events: auto; }
+        .theme-legend-title { margin: 0; font-size: 12px; font-weight: 750; line-height: 1.4; }
+        .theme-legend-units { display: block; font-size: 10px; color: #607868; margin: 3px 0 7px; }
+        .theme-samples { display: flex; align-items: flex-end; justify-content: space-around; gap: 8px; min-height: 74px; }
+        .theme-sample { display: flex; flex: 1; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
+        .theme-sample-circle { display: block; border: 1px solid; border-radius: 50%; box-sizing: border-box; }
+        .theme-sample-value { font-size: 10px; font-variant-numeric: tabular-nums; }
+        .theme-legend-note { font-size: 10px; line-height: 1.5; color: #5d7466; margin: 9px 0 0; }
+        .tree-analysis-tooltip { padding: 10px 12px; border-radius: 10px; border-color: #c6d7cd; color: #264b35; }
+        .tree-tooltip-name { display: block; font-weight: 750; margin-bottom: 5px; font-size: 12px; }
+        .tree-tooltip-row { display: block; font-size: 11px; line-height: 1.7; }
+        .tree-tooltip-active { font-weight: 800; }
+        @media (max-width: 820px) {
+            .theme-legend { bottom: 26px; right: 12px; width: 230px; padding: 10px 12px; }
+            body.panel-open .theme-legend { display: none; }
+            .analysis-body { padding: 11px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            #sidePanel { scroll-behavior: auto; transition: none; }
+        }
+        </style>
+        <title>Visor de arbolado y servicios ecosistémicos</title>
+    </head>
+    <body>
+        <div id="map"></div>
+        <div id="appHeader" class="ui-card">
+            <h1>Visor de arbolado y servicios ecosistémicos de Guadix</h1>
+        </div>
+        <button id="panelToggle" type="button" aria-controls="sidePanel" aria-expanded="true">Mostrar / ocultar filtros</button>
+        <aside id="sidePanel" class="ui-card">
+            <div class="panel-section">
+                <h2 class="section-title">Buscar zona o viario</h2>
+                <div class="field" style="margin-bottom:0">
+                    <label for="zoneSearchInput">Nombre o c&oacute;digo de la zona</label>
+                    <div class="zone-input-wrap" id="zoneSearchWrap">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="10" cy="10" r="6.5"/><path d="m15 15 5 5"/></svg>
+                        <input id="zoneSearchInput" type="text" placeholder="Escribe para ver las zonas..." autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-haspopup="listbox" aria-controls="zoneSuggestions" aria-expanded="false" aria-describedby="zoneSearchHelp">
+                        <button id="zoneClearBtn" type="button" aria-label="Limpiar zona localizada" title="Limpiar zona" hidden>&times;</button>
+                        <button id="zoneListBtn" type="button" aria-label="Desplegar zonas" title="Desplegar zonas">&#9662;</button>
+                    </div>
+                    <div class="field-help" id="zoneSearchHelp">Localiza la zona en el mapa; no cambia los filtros del arbolado. Tambi&eacute;n busca en capas ocultas.</div>
+                    <p class="stat-note" id="zoneSelectionStatus" role="status" hidden></p>
+                </div>
+            </div>
+            <div class="panel-section">
+                <h2 class="section-title">Vistas del arbolado</h2>
+                <div class="field">
+                    <label for="treeMapView">Representaci&oacute;n en el mapa</label>
+                    <select id="treeMapView">
+                        <option value="normal">Vista normal</option>
+                        <option value="oxygen">Producci&oacute;n anual de O&#8322;</option>
+                        <option value="annualCO2">Fijaci&oacute;n anual de CO&#8322; equivalente</option>
+                        <option value="annualCarbon">Secuestro bruto anual de carbono (C)</option>
+                        <option value="storedCarbon">Carbono almacenado (acumulado)</option>
+                    </select>
+                </div>
+                <div class="map-view-note" id="treeViewHelp">Elige una variable para destacar los &aacute;rboles con mayor valor mediante c&iacute;rculos de distinto tama&ntilde;o y color.</div>
+            </div>
+            <div class="panel-section">
+                <details class="analysis-details" id="speciesRankingDetails">
+                    <summary>Top 10 &middot; especies <span class="analysis-badge" id="rankingBadge">O&#8322;</span></summary>
+                    <div class="analysis-body">
+                        <p class="analysis-description">Estad&iacute;sticas de los &aacute;rboles que cumplen los filtros. Pulsa una especie para filtrarla en el mapa.</p>
+                        <div class="field">
+                            <label for="rankingMetric">Ordenar por</label>
+                            <select id="rankingMetric">
+                                <option value="oxygen">Producci&oacute;n anual de O&#8322;</option>
+                                <option value="annualCO2">Fijaci&oacute;n anual de CO&#8322; equivalente</option>
+                                <option value="annualCarbon">Secuestro bruto anual de carbono (C)</option>
+                                <option value="storedCarbon">Carbono almacenado (acumulado)</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label for="rankingBasis">Tipo de comparaci&oacute;n</label>
+                            <select id="rankingBasis">
+                                <option value="total">Total por especie</option>
+                                <option value="average">Media por &aacute;rbol con dato</option>
+                            </select>
+                        </div>
+                        <p class="analysis-description" id="rankingContext" aria-live="polite"></p>
+                        <ol id="speciesRankingList" class="ranking-list" aria-label="Top 10 de especies"></ol>
+                        <button class="btn btn-secondary analysis-action" id="rankingShowMapBtn" type="button">Ver esta variable en el mapa</button>
+                        <button class="btn btn-secondary analysis-action" id="rankingClearSpeciesBtn" type="button" hidden>Quitar filtro de especie</button>
+                        <p class="analysis-caption" id="rankingCoverage"></p>
+                        <p class="analysis-caption">La media se calcula solo sobre ejemplares con dato. Es una comparaci&oacute;n de este inventario, no una propiedad fija de cada especie. El carbono almacenado es una reserva, no una fijaci&oacute;n anual.</p>
+                    </div>
+                </details>
+            </div>
+
+            <div class="panel-section">
+                <h2 class="section-title">Filtros del arbolado</h2>
+                <div class="field">
+                    <label for="filterSpecies">Especie</label>
+                    <select id="filterSpecies">
+                        <option value="">Todas las especies</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="filterMto">Mantenimiento periódico</label>
+                    <select id="filterMto">
+                        <option value="">Todos</option>
+                        <option value="si">Sí</option>
+                        <option value="no">No</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label for="filterBenefits">Beneficios anuales totales mínimos (€/año)</label>
+                    <input id="filterBenefits" type="number" min="0" step="0.01" placeholder="Ej. 50">
+                </div>
+                <div class="field">
+                    <label for="filterCarbon">Almacenamiento de carbono mínimo (kg)</label>
+                    <input id="filterCarbon" type="number" min="0" step="0.01" placeholder="Ej. 100">
+                </div>
+                <div class="field">
+                    <label for="filterOxygen">Producción de oxígeno mínima (kg/año)</label>
+                    <input id="filterOxygen" type="number" min="0" step="0.01" placeholder="Ej. 10">
+                    <div class="field-help">Puedes combinar varios filtros a la vez.</div>
+                </div>
+                <label class="checkbox-field">
+                    <input id="filterPending" type="checkbox">
+                    <span>Solo mostrar árboles con actuaciones pendientes</span>
+                </label>
+                <div class="button-row">
+                    <button id="applyFiltersBtn" class="btn btn-primary" type="button">Aplicar filtros</button>
+                    <button id="resetFiltersBtn" class="btn btn-secondary" type="button">Limpiar</button>
+                </div>
+            </div>
+            <div class="panel-section">
+                <h2 class="section-title">Resumen dinámico</h2>
+                <p class="selection-help">Datos de los árboles que cumplen los filtros. Las equivalencias se actualizan automáticamente.</p>
+                <div class="stats-grid" aria-live="polite" aria-atomic="false">
+                    <div class="stat-card">
+                        <span class="stat-label">Árboles seleccionados</span>
+                        <div class="stat-value" id="statCount">0</div>
+                        <p class="stat-note">Selección por filtros, independiente del zoom del mapa.</p>
+                    </div>
+                    <div class="stat-card impact-card impact-oxygen" id="oxygenImpactCard">
+                        <span class="stat-label">Oxígeno para personas</span>
+                        <div class="impact-main">
+                            <span class="impact-icon" aria-hidden="true">
+                                <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+                                    <circle cx="16" cy="9" r="4"/>
+                                    <path d="M8.5 27v-3.5a7.5 7.5 0 0 1 15 0V27M6.5 6a3.5 3.5 0 0 0 0 7M4.5 17A5.5 5.5 0 0 0 1.5 22v3M25.5 6a3.5 3.5 0 0 1 0 7M27.5 17a5.5 5.5 0 0 1 3 5v3"/>
+                                </svg>
+                            </span>
+                            <div class="impact-number-block">
+                                <div class="stat-value impact-value" id="statPeople">—</div>
+                                <div class="impact-unit">personas durante un año</div>
+                            </div>
+                        </div>
+                        <p class="impact-description"><strong id="statOxygen">—</strong><br>de oxígeno producido por la selección.</p>
+                        <div class="impact-reference">Oxígeno anual ÷ <strong>300 kg de O₂/persona/año</strong>.<br>Referencia NASA redondeada; equivalencia orientativa.</div>
+                        <div class="data-coverage" id="oxygenCoverage" hidden></div>
+                    </div>
+                    <div class="stat-card impact-card impact-cars" id="carsImpactCard">
+                        <span class="stat-label">Coches equivalentes · CO₂</span>
+                        <div class="impact-main">
+                            <span class="impact-icon" aria-hidden="true">
+                                <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+                                    <path d="m5 14 3-7h16l3 7M3 16a2 2 0 0 1 2-2h22a2 2 0 0 1 2 2v8H3zM7 24v3M25 24v3M3 11l-1-1M29 11l1-1M12 20h8"/>
+                                    <circle cx="7.5" cy="18.5" r="1" fill="currentColor" stroke="none"/>
+                                    <circle cx="24.5" cy="18.5" r="1" fill="currentColor" stroke="none"/>
+                                </svg>
+                            </span>
+                            <div class="impact-number-block">
+                                <div class="stat-value impact-value" id="statCars">—</div>
+                                <div class="impact-unit">coches durante un año, en CO₂</div>
+                            </div>
+                        </div>
+                        <p class="impact-description"><strong id="statCO2">—</strong><br>de CO₂ capturado, a partir del secuestro bruto anual de carbono.</p>
+                        <div class="impact-reference" id="carReference">Escenario Europa: 1,6 t de CO₂/coche/año (1.600 kg).</div>
+                        <div class="field car-preset-field">
+                            <label for="carFactorPreset">Referencia del coche (CO₂/año)</label>
+                            <select id="carFactorPreset" autocomplete="off" aria-describedby="carReference">
+                                <option value="1600" selected>1,6 t por coche y año</option>
+                                <option value="1300">1,3 t por coche y año</option>
+                                <option value="custom">Personalizada</option>
+                            </select>
+                        </div>
+                        <p class="stat-note">Comparación de masas de CO₂; no significa neutralizar toda la contaminación del tráfico.</p>
+                        <div class="data-coverage" id="carbonCoverage" hidden></div>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">Contaminación atmosférica eliminada</span>
+                        <div class="stat-value" id="statPollution">—</div>
+                        <p class="stat-note">Suma del campo de eliminación de contaminación, convertido de g/año a kg/año. Se muestra por separado del CO₂.</p>
+                        <div class="data-coverage" id="pollutionCoverage" hidden></div>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">Beneficios anuales acumulados</span>
+                        <div class="stat-value" id="statBenefits">0 €</div>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">Carbono almacenado</span>
+                        <div class="stat-value" id="statCarbon">0 kg</div>
+                        <p class="stat-note">Reserva acumulada; no se utiliza como captura anual en la equivalencia de coches.</p>
+                    </div>
+                </div>
+                <details class="equivalence-methods" id="equivalenceSettings">
+                    <summary>Cómo se calcula y fuentes de referencia</summary>
+                    <p><strong>Personas:</strong> producción anual de oxígeno de los árboles seleccionados dividida entre <strong>300 kg de O₂ por persona y año</strong>.</p>
+                    <p><strong>Base NASA:</strong> su referencia nominal de soporte vital es de 0,84 kg de O₂ por persona y día, equivalente a 306,6 kg en 365 días. En este visor se adopta el valor aproximado solicitado de <strong>300 kg/año</strong>. No es una necesidad universal exacta ni una garantía de suministro de oxígeno. <a href="https://ntrs.nasa.gov/api/citations/20210013975/downloads/Life%20Support%20Presentation%20to%20Space%20Portal%2004_21_2021%20V2.pdf#page=13" target="_blank" rel="noopener noreferrer">NASA, Life Support for Long Duration Missions (2021), p. 13</a>.</p>
+                    <p class="formula" id="oxygenEquation">O₂ anual (kg/año) ÷ 300 = personas equivalentes</p>
+                    <p><strong>Coches:</strong> se interpreta el campo «Secuestro bruto de carbono (kg/año)» como kg de carbono (C), según su nombre. Se convierte a CO₂ multiplicando por 44/12 y se divide entre las emisiones anuales del coche de referencia. No se utiliza el carbono almacenado ni el campo de contaminación eliminada.</p>
+                    <p class="formula" id="carEquation">Carbono anual × 44/12 ÷ emisiones del coche = coches equivalentes</p>
+                    <p><strong>Escenarios europeos adoptados:</strong> <strong>1,6 t de CO₂/coche/año</strong> al abrir el visor, con opción de <strong>1,3 t/año</strong> en el selector de la tarjeta. Son factores orientativos, no una media oficial anual de todo el parque europeo.</p>
+                    <p><strong>Contexto europeo:</strong> la <a href="https://www.eea.europa.eu/en/analysis/indicators/co2-performance-of-new-passenger" target="_blank" rel="noopener noreferrer">Agencia Europea de Medio Ambiente</a> publica 106,7 g de CO₂/km para los turismos nuevos de la UE en 2024 (valores de homologación). Con recorridos <strong>supuestos</strong> de 12.000 o 15.000 km/año, se obtienen aproximadamente 1,28 o 1,60 t/año. Los recorridos son escenarios, no medias observadas; las emisiones reales dependen del vehículo y del uso. La comparación no incluye el ciclo de vida completo.</p>
+                    <div class="field" id="carCustomField" hidden>
+                        <label for="carAnnualEmissions">Emisiones personalizadas (kg de CO₂/coche/año)</label>
+                        <input id="carAnnualEmissions" type="number" min="0.01" step="any" value="1600" inputmode="decimal" aria-describedby="carFactorHelp carFactorError">
+                        <div class="field-help" id="carFactorHelp">1,3 t = 1.300 kg; 1,6 t = 1.600 kg. Introduce aquí otro factor documentado. Solo cambia la equivalencia de coches.</div>
+                    </div>
+                    <p class="factor-error" id="carFactorError" role="status" hidden>Introduce un factor numérico mayor que cero.</p>
+                    <button class="btn btn-secondary" id="resetCarFactorBtn" type="button">Restablecer 1,6 t/coche/año</button>
+                    <p><strong>Conversión de C a CO₂:</strong> relación de masas 44/12, también empleada en la <a href="https://forums.itreetools.org/viewtopic.php?p=2414" target="_blank" rel="noopener noreferrer">documentación de i-Tree</a>.</p>
+                    <p><strong>Contaminantes:</strong> no se equipara la masa agregada de contaminación eliminada a emisiones de coches sin un desglose y factores comparables por contaminante. La equivalencia de CO₂ es bruta y orientativa, no una compensación neta certificada.</p>
+                    <p>Los registros sin datos no se estiman. Cuando faltan valores se indica la cobertura de cada cálculo. Sin árboles seleccionados, los resultados son cero.</p>
+                </details>
+            </div>
+            <div class="panel-section" id="layerLegend">
+                <h2 class="section-title">Leyenda y capas</h2>
+                <div class="layer-toggles" role="group" aria-label="Capas visibles del mapa">
+                    <label class="layer-toggle-row" data-visible="true">
+                        <input id="toggleArbolado" type="checkbox" checked autocomplete="off">
+                        <span class="legend-dot" style="background:#54b04a" aria-hidden="true"></span>
+                        <span class="layer-name">Arbolado</span>
+                        <span class="layer-state" id="stateArbolado" aria-hidden="true">Visible</span>
+                    </label>
+                    <label class="layer-toggle-row" data-visible="true">
+                        <input id="toggleZonasVerdes" type="checkbox" checked autocomplete="off">
+                        <span class="legend-dot" style="background:#00992e" aria-hidden="true"></span>
+                        <span class="layer-name">Zonas verdes</span>
+                        <span class="layer-state" id="stateZonasVerdes" aria-hidden="true">Visible</span>
+                    </label>
+                    <label class="layer-toggle-row" data-visible="false">
+                        <input id="toggleViario" type="checkbox" autocomplete="off">
+                        <span class="legend-dot" style="background:#dab061" aria-hidden="true"></span>
+                        <span class="layer-name">Viario</span>
+                        <span class="layer-state" id="stateViario" aria-hidden="true">Oculto</span>
+                    </label>
+                </div>
+                <p class="stat-note">Al abrir: arbolado y zonas verdes visibles; polígonos de viario ocultos. Estas casillas solo cambian la visualización, no la selección de árboles ni sus equivalencias.</p>
+            </div>
+        </aside>
+        <div class="zone-suggestions" id="zoneSuggestionPopup" hidden>
+            <div class="zone-suggestion-heading" id="zoneSuggestionHeading" role="status"></div>
+            <div class="zone-suggestion-list" id="zoneSuggestions" role="listbox" aria-label="Zonas encontradas"></div>
+        </div>
+        <section class="theme-legend ui-card" id="treeThemeLegend" aria-label="Leyenda del mapa tem&aacute;tico" hidden></section>
+
+   
+        <script src="js/qgis2web_expressions.js"></script>
+        <script src="js/leaflet.js"></script>
+        <script src="js/L.Control.Layers.Tree.min.js"></script>
+        <script src="js/L.Control.Locate.min.js"></script>
+        <script src="js/leaflet.rotatedMarker.js"></script>
+        <script src="js/leaflet.pattern.js"></script>
+        <script src="js/leaflet-hash.js"></script>
+        <script src="js/Autolinker.min.js"></script>
+        <script src="js/rbush.min.js"></script>
+        <script src="js/labelgun.min.js"></script>
+        <script src="js/labels.js"></script>
+        <script src="js/leaflet.photon.js"></script>
+        <script src="js/leaflet-measure.js"></script>
+        <script src="js/leaflet-search.js"></script>
+        <script src="data/ZONAS_VERDES_GUADIX_2.js"></script>
+        <script src="data/ARBOLADOYBENEFICIOSECOSISTMICOS_3.js"></script>
+        <script src="js/especies_guadix.js"></script>
+        <script src="js/destinos_zonas_guadix.js"></script>
+        <script src="js/fichas_guadix.js"></script>
+        <script>
+        var map = L.map('map', {
+            zoomControl:false, maxZoom:28, minZoom:1
+        })
+        var hash = new L.Hash(map);
+        map.attributionControl.setPrefix('<a href="https://github.com/qgis2web/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
+        var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
+        // remove popup's row if "visible-with-data"
+        function removeEmptyRowsFromPopupContent(content, feature) {
+         var tempDiv = document.createElement('div');
+         tempDiv.innerHTML = content;
+         var rows = tempDiv.querySelectorAll('tr');
+         for (var i = 0; i < rows.length; i++) {
+             var td = rows[i].querySelector('td.visible-with-data');
+             var key = td ? td.id : '';
+             if (td && td.classList.contains('visible-with-data') && feature.properties[key] == null) {
+                 rows[i].parentNode.removeChild(rows[i]);
+             }
+         }
+         return tempDiv.innerHTML;
+        }
+        // modify popup if contains media
+        function addClassToPopupIfMedia(content, popup) {
+            var tempDiv = document.createElement('div');
+            tempDiv.innerHTML = content;
+            var imgTd = tempDiv.querySelector('td img');
+            if (imgTd) {
+                var src = imgTd.getAttribute('src');
+                if (/\.(jpg|jpeg|png|gif|bmp|webp|avif)$/i.test(src)) {
+                    popup._contentNode.classList.add('media');
+                    var img = popup._contentNode.querySelector('td img');
+                    if (img) {
+                        // If already loaded (cache), update immediately
+                        if (img.complete && img.naturalHeight > 0) {
+                            popup.update();
+                        } else {
+                            img.addEventListener('load', function() {
+                                popup.update();
+                            });
+                            img.addEventListener('error', function() {
+                                popup.update();
+                            });
+                        }
+                    }
+                } else if (/\.(mp3|wav|ogg|aac)$/i.test(src)) {
+                    var audio = document.createElement('audio');
+                    audio.controls = true;
+                    audio.src = src;
+                    imgTd.parentNode.replaceChild(audio, imgTd);
+                    popup._contentNode.classList.add('media');
+                    setTimeout(function() {
+                        popup.setContent(tempDiv.innerHTML);
+                        popup.update();
+                    }, 10);
+                } else if (/\.(mp4|webm|ogg|mov)$/i.test(src)) {
+                    var video = document.createElement('video');
+                    video.controls = true;
+                    video.src = src;
+                    video.style.width = "400px";
+                    video.style.height = "300px";
+                    video.style.maxHeight = "60vh";
+                    video.style.maxWidth = "60vw";
+                    imgTd.parentNode.replaceChild(video, imgTd);
+                    popup._contentNode.classList.add('media');
+                    // Aggiorna il popup quando il video carica i metadati
+                    video.addEventListener('loadedmetadata', function() {
+                        popup.update();
+                    });
+                    setTimeout(function() {
+                        popup.setContent(tempDiv.innerHTML);
+                        popup.update();
+                    }, 10);
+                } else {
+                    popup._contentNode.classList.remove('media');
+                }
+            } else {
+                popup._contentNode.classList.remove('media');
+            }
+        }
+        var zoomControl = L.control.zoom({
+            position: 'topleft'
+        }).addTo(map);
+        L.control.locate({locateOptions: {maxZoom: 19}}).addTo(map);
+        var measureControl = new L.Control.Measure({
+            position: 'topleft',
+            primaryLengthUnit: 'meters',
+            secondaryLengthUnit: 'kilometers',
+            primaryAreaUnit: 'sqmeters',
+            secondaryAreaUnit: 'hectares'
+        });
+        measureControl.addTo(map);
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0].innerHTML = '';
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0].className += ' fas fa-ruler';
+        var bounds_group = new L.featureGroup([]);
+        function setBounds() {
+            if (bounds_group.getLayers().length) {
+                map.fitBounds(bounds_group.getBounds());
+            }
+        }
+        map.createPane('pane_IGN_0');
+        map.getPane('pane_IGN_0').style.zIndex = 400;
+        var layer_IGN_0 = L.tileLayer.wms('https://www.ign.es/wms-inspire/ign-base', {
+            pane: 'pane_IGN_0',
+            layers: 'IGNBaseTodo-gris',
+            styles: '',
+            format: 'image/png',
+            transparent: false,
+            version: '1.3.0',
+            opacity: 1.0,
+            attribution: 'Instituto Geográfico Nacional (IGN)',
+            minZoom: 1,
+            maxZoom: 28
+        });
+        layer_IGN_0;
+        map.addLayer(layer_IGN_0);
+        map.createPane('pane_GoogleSatellite_1');
+        map.getPane('pane_GoogleSatellite_1').style.zIndex = 401;
+        var layer_GoogleSatellite_1 = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+            pane: 'pane_GoogleSatellite_1',
+            opacity: 1.0,
+            attribution: '<a href="https://www.google.at/permissions/geoguidelines/attr-guide.html">Map data ©2015 Google</a>',
+            minZoom: 1,
+            maxZoom: 28,
+            minNativeZoom: 0,
+            maxNativeZoom: 20
+        });
+        layer_GoogleSatellite_1;
+        function pop_ZONAS_VERDES_GUADIX_2(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">NOMBRE</th>\
+                        <td class="visible-with-data" id="NOMBRE">' + (feature.properties['NOMBRE'] !== null ? autolinker.link(String(feature.properties['NOMBRE']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">ID</th>\
+                        <td class="visible-with-data" id="ID">' + (feature.properties['ID'] !== null ? autolinker.link(String(feature.properties['ID']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">INST_AGUA</th>\
+                        <td class="visible-with-data" id="INST_AGUA">' + (feature.properties['INST_AGUA'] !== null ? autolinker.link(String(feature.properties['INST_AGUA']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">INST_ELECTR</th>\
+                        <td class="visible-with-data" id="INST_ELECTR">' + (feature.properties['INST_ELECTR'] !== null ? autolinker.link(String(feature.properties['INST_ELECTR']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">INST_SANEAM</th>\
+                        <td class="visible-with-data" id="INST_SANEAM">' + (feature.properties['INST_SANEAM'] !== null ? autolinker.link(String(feature.properties['INST_SANEAM']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">ACCESIBILIDAD</th>\
+                        <td class="visible-with-data" id="ACCESIBILIDAD">' + (feature.properties['ACCESIBILIDAD'] !== null ? autolinker.link(String(feature.properties['ACCESIBILIDAD']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">SUPERFICIE</th>\
+                        <td class="visible-with-data" id="SUPERFICIE">' + (feature.properties['SUPERFICIE'] !== null ? autolinker.link(String(feature.properties['SUPERFICIE']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">ESTADO</th>\
+                        <td class="visible-with-data" id="ESTADO">' + (feature.properties['ESTADO'] !== null ? autolinker.link(String(feature.properties['ESTADO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+            var enhancedContent = FICHAS_GUADIX.zonePopup(feature, layer, content);
+            layer.on('popupopen', function(e) {
+                addClassToPopupIfMedia(content, e.popup);
+            });
+            layer.bindPopup(enhancedContent, { maxWidth: 420, minWidth: 265, maxHeight: 520 });
+        }
+
+        function style_ZONAS_VERDES_GUADIX_2_0(feature) {
+            switch(isViarioFeature(feature) ? 'VIARIO' : 'ZONAS_VERDES') {
+                case 'VIARIO':
+                    return {
+                pane: 'pane_ZONAS_VERDES_GUADIX_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(218,176,97,0.7)',
+                interactive: true,
+            }
+                    break;
+                default:
+                    return {
+                pane: 'pane_ZONAS_VERDES_GUADIX_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(0,153,46,0.7)',
+                interactive: true,
+            }
+                    break;
+            }
+        }
+        map.createPane('pane_ZONAS_VERDES_GUADIX_2');
+        map.getPane('pane_ZONAS_VERDES_GUADIX_2').style.zIndex = 402;
+        map.getPane('pane_ZONAS_VERDES_GUADIX_2').style['mix-blend-mode'] = 'normal';
+        function isViarioFeature(feature) {
+            var props = feature && feature.properties ? feature.properties : {};
+            return normalizeText(props.ESPACIO_FEMP) === 'viario';
+        }
+        var layer_ZONAS_VERDES_GUADIX_2 = new L.geoJson(json_ZONAS_VERDES_GUADIX_2, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_ZONAS_VERDES_GUADIX_2',
+            layerName: 'layer_ZONAS_VERDES_GUADIX_2',
+            pane: 'pane_ZONAS_VERDES_GUADIX_2',
+            filter: function(feature) { return !isViarioFeature(feature); },
+            onEachFeature: pop_ZONAS_VERDES_GUADIX_2,
+            style: style_ZONAS_VERDES_GUADIX_2_0
+        });
+        var layer_VIARIO_GUADIX_2 = new L.geoJson(json_ZONAS_VERDES_GUADIX_2, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_ZONAS_VERDES_GUADIX_2',
+            layerName: 'layer_VIARIO_GUADIX_2',
+            pane: 'pane_ZONAS_VERDES_GUADIX_2',
+            filter: isViarioFeature,
+            onEachFeature: pop_ZONAS_VERDES_GUADIX_2,
+            style: style_ZONAS_VERDES_GUADIX_2_0
+        });
+        bounds_group.addLayer(layer_ZONAS_VERDES_GUADIX_2);
+        map.addLayer(layer_ZONAS_VERDES_GUADIX_2);
+        // VIARIO is deliberately not added: it starts hidden on every load.
+        function pop_ARBOLADOYBENEFICIOSECOSISTMICOS_3(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">ESPECIE</th>\
+                        <td class="visible-with-data" id="ESPECIE">' + (feature.properties['ESPECIE'] !== null ? autolinker.link(String(feature.properties['ESPECIE']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">ID</th>\
+                        <td class="visible-with-data" id="ID">' + (feature.properties['ID'] !== null ? autolinker.link(String(feature.properties['ID']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">DIAM_TRONCO</th>\
+                        <td class="visible-with-data" id="DIAM_TRONCO">' + (feature.properties['DIAM_TRONCO'] !== null ? autolinker.link(String(feature.properties['DIAM_TRONCO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">ALTURA_1RAMA</th>\
+                        <td class="visible-with-data" id="ALTURA_1RAMA">' + (feature.properties['ALTURA_1RAMA'] !== null ? autolinker.link(String(feature.properties['ALTURA_1RAMA']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">ALTURA_COPA</th>\
+                        <td class="visible-with-data" id="ALTURA_COPA">' + (feature.properties['ALTURA_COPA'] !== null ? autolinker.link(String(feature.properties['ALTURA_COPA']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">DIAM_COPA</th>\
+                        <td class="visible-with-data" id="DIAM_COPA">' + (feature.properties['DIAM_COPA'] !== null ? autolinker.link(String(feature.properties['DIAM_COPA']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">OBSERVACIONES</th>\
+                        <td class="visible-with-data" id="OBSERVACIONES">' + (feature.properties['OBSERVACIONES'] !== null ? autolinker.link(String(feature.properties['OBSERVACIONES']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">REQUIERE_MTO_PERIODICO</th>\
+                        <td class="visible-with-data" id="REQUIERE_MTO_PERIODICO">' + (feature.properties['REQUIERE_MTO_PERIODICO'] !== null ? autolinker.link(String(feature.properties['REQUIERE_MTO_PERIODICO']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">ACTUACIONES_PENDIENTES</th>\
+                        <td class="visible-with-data" id="ACTUACIONES_PENDIENTES">' + (feature.properties['ACTUACIONES_PENDIENTES'] !== null ? autolinker.link(String(feature.properties['ACTUACIONES_PENDIENTES']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Valor de sustitución (€)</th>\
+                        <td class="visible-with-data" id="Valor de sustitución (€)">' + (feature.properties['Valor de sustitución (€)'] !== null ? autolinker.link(String(feature.properties['Valor de sustitución (€)']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Almacenamiento de carbono (kg)</th>\
+                        <td class="visible-with-data" id="Almacenamiento de carbono (kg)">' + (feature.properties['Almacenamiento de carbono (kg)'] !== null ? autolinker.link(String(feature.properties['Almacenamiento de carbono (kg)']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Almacenamiento de carbono (€)</th>\
+                        <td class="visible-with-data" id="Almacenamiento de carbono (€)">' + (feature.properties['Almacenamiento de carbono (€)'] !== null ? autolinker.link(String(feature.properties['Almacenamiento de carbono (€)']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Secuestro bruto de carbono (kg/año)</th>\
+                        <td class="visible-with-data" id="Secuestro bruto de carbono (kg/año)">' + (feature.properties['Secuestro bruto de carbono (kg/año)'] !== null ? autolinker.link(String(feature.properties['Secuestro bruto de carbono (kg/año)']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Secuestro bruto de carbono (€/año)</th>\
+                        <td class="visible-with-data" id="Secuestro bruto de carbono (€/año)">' + (feature.properties['Secuestro bruto de carbono (€/año)'] !== null ? autolinker.link(String(feature.properties['Secuestro bruto de carbono (€/año)']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Eliminación de la contaminación (g/año)</th>\
+                        <td class="visible-with-data" id="Eliminación de la contaminación (g/año)">' + (feature.properties['Eliminación de la contaminación (g/año)'] !== null ? autolinker.link(String(feature.properties['Eliminación de la contaminación (g/año)']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Eliminación de la contaminación (€/año)</th>\
+                        <td class="visible-with-data" id="Eliminación de la contaminación (€/año)">' + (feature.properties['Eliminación de la contaminación (€/año)'] !== null ? autolinker.link(String(feature.properties['Eliminación de la contaminación (€/año)']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Producción de oxígeno (kg/año)</th>\
+                        <td class="visible-with-data" id="Producción de oxígeno (kg/año)">' + (feature.properties['Producción de oxígeno (kg/año)'] !== null ? autolinker.link(String(feature.properties['Producción de oxígeno (kg/año)']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">Beneficios anuales totales (€/año)</th>\
+                        <td class="visible-with-data" id="Beneficios anuales totales (€/año)">' + (feature.properties['Beneficios anuales totales (€/año)'] !== null ? autolinker.link(String(feature.properties['Beneficios anuales totales (€/año)']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+            var enhancedContent = FICHAS_GUADIX.treePopup(feature, layer, content);
+            layer.on('popupopen', function(e) {
+                addClassToPopupIfMedia(content, e.popup);
+                FICHAS_GUADIX.onTreePopupOpen(e);
+            });
+            layer.bindPopup(enhancedContent, { maxWidth: 420, minWidth: 290, maxHeight: 550 });
+        }
+
+        function style_ARBOLADOYBENEFICIOSECOSISTMICOS_3_0() {
+            return {
+                pane: 'pane_ARBOLADOYBENEFICIOSECOSISTMICOS_3',
+                radius: 3.1999999999999997,
+                opacity: 1,
+                color: 'rgba(38,91,31,1.0)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1,
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(84,176,74,1.0)',
+                interactive: true,
+            }
+        }
+        map.createPane('pane_ARBOLADOYBENEFICIOSECOSISTMICOS_3');
+        map.getPane('pane_ARBOLADOYBENEFICIOSECOSISTMICOS_3').style.zIndex = 403;
+        map.getPane('pane_ARBOLADOYBENEFICIOSECOSISTMICOS_3').style['mix-blend-mode'] = 'normal';
+        var layer_ARBOLADOYBENEFICIOSECOSISTMICOS_3 = new L.geoJson(json_ARBOLADOYBENEFICIOSECOSISTMICOS_3, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_ARBOLADOYBENEFICIOSECOSISTMICOS_3',
+            layerName: 'layer_ARBOLADOYBENEFICIOSECOSISTMICOS_3',
+            pane: 'pane_ARBOLADOYBENEFICIOSECOSISTMICOS_3',
+            onEachFeature: pop_ARBOLADOYBENEFICIOSECOSISTMICOS_3,
+            pointToLayer: function (feature, latlng) {
+                var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                var marker = L.circleMarker(latlng, style_ARBOLADOYBENEFICIOSECOSISTMICOS_3_0(feature));
+                // MultiPoint/GeometryCollection attach .feature to a parent group.
+                // Keep the source properties on each circle without altering GeoJSON.
+                marker._treeSourceFeature = feature;
+                return marker;
+            },
+        });
+        bounds_group.addLayer(layer_ARBOLADOYBENEFICIOSECOSISTMICOS_3);
+        map.addLayer(layer_ARBOLADOYBENEFICIOSECOSISTMICOS_3);
+        var allArboladoFeatures = (json_ARBOLADOYBENEFICIOSECOSISTMICOS_3 && json_ARBOLADOYBENEFICIOSECOSISTMICOS_3.features) ? json_ARBOLADOYBENEFICIOSECOSISTMICOS_3.features.slice() : [];
+        var overlaysTree = [
+            {label: '<img src="legend/ARBOLADOYBENEFICIOSECOSISTMICOS_3.png" /> ARBOLADO Y BENEFICIOS ECOSISTÉMICOS', layer: layer_ARBOLADOYBENEFICIOSECOSISTMICOS_3},
+            {label: '<img src="legend/ZONAS_VERDES_GUADIX_2_ZONASVERDES1.png" alt="" /> Zonas verdes', layer: layer_ZONAS_VERDES_GUADIX_2},
+            {label: '<img src="legend/ZONAS_VERDES_GUADIX_2_VIARIO0.png" alt="" /> Viario', layer: layer_VIARIO_GUADIX_2},
+        {label: '<b>WMS</b>',  selectAllCheckbox: true, children: [
+            {label: "Google Satellite", layer: layer_GoogleSatellite_1, radioGroup: 'bm' },
+            {label: "IGN Base gris", layer: layer_IGN_0, radioGroup: 'bm' },]},]
+        var lay = L.control.layers.tree(null, overlaysTree,{
+            //namedToggle: true,
+            //selectorBack: false,
+            //closedSymbol: '&#8862; &#x1f5c0;',
+            //openedSymbol: '&#8863; &#x1f5c1;',
+            //collapseAll: 'Collapse all',
+            //expandAll: 'Expand all',
+            collapsed: true,
+        });
+        lay.addTo(map);
+        setBounds();
+        // Zone autocomplete is initialized below, independently of Leaflet Search.
+
+        function normalizeText(value) {
+            return String(value == null ? '' : value)
+                .normalize('NFD')
+                .replace(/[̀-ͯ]/g, '')
+                .replace(/\s+/g, ' ')
+                .trim()
+                .toLowerCase();
+        }
+
+        function getPropertyValue(props, targetLabel) {
+            if (!props) return null;
+            var target = normalizeText(targetLabel);
+            for (var key in props) {
+                var current = normalizeText(key);
+                if (current === target || current.indexOf(target) !== -1 || target.indexOf(current) !== -1) {
+                    return props[key];
+                }
+            }
+            return null;
+        }
+
+        function parseSmartNumber(value) {
+            if (value === null || value === undefined || value === '') return null;
+            if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+            var text = String(value).replace(/[\s\u00a0\u202f]/g, '').trim();
+            if (!text) return null;
+            // Standard numeric strings, including QGIS scientific notation.
+            if (/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i.test(text)) {
+                var direct = Number(text);
+                return Number.isFinite(direct) ? direct : null;
+            }
+            // Localized strings may contain a currency or the original mass units.
+            text = text.replace(/[\u20ac$\u00a3]/g, '')
+                .replace(/(?:kg|g|t)(?:\/(?:a\u00f1o|ano|year|yr))?$/i, '');
+            if (!/^[+-]?[\d.,]+$/.test(text)) return null;
+            var lastComma = text.lastIndexOf(',');
+            var lastDot = text.lastIndexOf('.');
+            if (lastComma !== -1 && lastDot !== -1) {
+                // Both 1.234,56 and 1,234.56 are accepted.
+                text = lastComma > lastDot
+                    ? text.replace(/\./g, '').replace(',', '.')
+                    : text.replace(/,/g, '');
+            } else if (lastComma !== -1) {
+                text = text.replace(',', '.');
+            }
+            if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(text)) return null;
+            var num = Number(text);
+            return Number.isFinite(num) ? num : null;
+        }
+
+        function formatNumber(value, suffix, decimals) {
+            var num = (value === null || value === undefined || isNaN(value)) ? 0 : value;
+            return num.toLocaleString('es-ES', {
+                minimumFractionDigits: decimals || 0,
+                maximumFractionDigits: decimals || 0
+            }) + (suffix ? ' ' + suffix : '');
+        }
+
+        function featureHasPendingActions(value) {
+            var text = normalizeText(value);
+            if (!text) return false;
+            return !['no', 'ninguna', 'ninguno', 'sin actuaciones', 'sin actuacion', 'null'].includes(text);
+        }
+
+        function featureMatchesMaintenance(value, filterValue) {
+            if (!filterValue) return true;
+            var text = normalizeText(value);
+            var positive = ['si', 'sí', 'yes', 'true', '1'];
+            var isPositive = positive.indexOf(text) !== -1;
+            if (filterValue === 'si') return isPositive;
+            if (filterValue === 'no') return !isPositive;
+            return true;
+        }
+
+        function populateSpeciesFilter() {
+            var select = document.getElementById('filterSpecies');
+            var values = [];
+            allArboladoFeatures.forEach(function(feature) {
+                var especie = getPropertyValue(feature.properties, 'ESPECIE');
+                if (especie !== null && especie !== undefined && String(especie).trim() !== '') {
+                    values.push(String(especie).trim());
+                }
+            });
+            values = Array.from(new Set(values)).sort(function(a, b) { return a.localeCompare(b, 'es'); });
+            values.forEach(function(value) {
+                var opt = document.createElement('option');
+                opt.value = value;
+                var ficha = GUIA_ESPECIES_GUADIX[value];
+                opt.textContent = ficha ? value + ' · ' + ficha.comun : value;
+                select.appendChild(opt);
+            });
+        }
+
+        var EQUIVALENCE_CONFIG = {
+            oxygenKgPerPersonYear: 300, // Rounded NASA nominal reference: 0.84 kg/day, about 306.6 kg/year.
+            defaultCarCO2KgPerYear: 1600, // Adopted European comparison scenario, not a fleet-wide annual average.
+            carbonToCO2: 44 / 12
+        };
+        var currentArboladoFeatures = allArboladoFeatures.slice();
+
+        function getExactMetric(props, targetLabel) {
+            if (!props) return null;
+            var target = normalizeText(targetLabel);
+            var keys = Object.keys(props);
+            for (var i = 0; i < keys.length; i++) {
+                if (normalizeText(keys[i]) === target) {
+                    return parseSmartNumber(props[keys[i]]);
+                }
+            }
+            return null;
+        }
+
+        function collectSelectionMetrics(features) {
+            var result = {
+                count: features.length,
+                benefits: 0,
+                storedCarbon: 0,
+                oxygen: { sum: 0, valid: 0 },
+                annualCarbon: { sum: 0, valid: 0 },
+                pollutionGrams: { sum: 0, valid: 0 }
+            };
+            function accumulate(metric, value) {
+                if (value !== null && Number.isFinite(value)) {
+                    metric.sum += value;
+                    metric.valid++;
+                }
+            }
+            features.forEach(function(feature) {
+                var props = feature.properties || {};
+                result.benefits += parseSmartNumber(getPropertyValue(props, 'Beneficios anuales totales')) || 0;
+                result.storedCarbon += getExactMetric(props, 'Almacenamiento de carbono (kg)') || 0;
+                // normalizeText handles accents, NBSP and repeated whitespace in QGIS labels.
+                accumulate(result.oxygen, getExactMetric(props, 'Produccion de oxigeno (kg/ano)'));
+                accumulate(result.annualCarbon, getExactMetric(props, 'Secuestro bruto de carbono (kg/ano)'));
+                accumulate(result.pollutionGrams, getExactMetric(props, 'Eliminacion de la contaminacion (g/ano)'));
+            });
+            return result;
+        }
+
+        function formatEquivalent(value) {
+            if (value === null || !Number.isFinite(value)) return 'Sin datos';
+            if (value < 0) return 'Balance negativo';
+            if (value === 0) return '0';
+            if (value < 0.01) return '< 0,01';
+            return '\u2248 ' + formatNumber(value, '', 2);
+        }
+
+        function formatAnnualMass(value, suffix) {
+            if (value > 0 && value < 0.01) return '< 0,01 ' + suffix;
+            return formatNumber(value, suffix, 2);
+        }
+
+        function updateMetricCoverage(id, metric, count, label) {
+            var el = document.getElementById(id);
+            var message = '';
+            if (count > 0 && metric.valid === 0) {
+                message = 'No hay datos de ' + label + ' para esta selecci\u00f3n.';
+            } else if (metric.valid < count) {
+                message = 'Suma parcial: ' + formatNumber(metric.valid, '', 0) + ' de ' +
+                    formatNumber(count, '', 0) + ' \u00e1rboles con datos. Los valores ausentes no se estiman.';
+            }
+            if (metric.sum < 0) {
+                message += (message ? ' ' : '') + 'El total del campo es negativo; no representa un beneficio positivo.';
+            }
+            el.textContent = message;
+            el.hidden = !message;
+        }
+
+        function updateStats(features) {
+            currentArboladoFeatures = features;
+            var metrics = collectSelectionMetrics(features);
+            var count = metrics.count;
+            var oxygenAvailable = count === 0 || metrics.oxygen.valid > 0;
+            var carbonAvailable = count === 0 || metrics.annualCarbon.valid > 0;
+            var pollutionAvailable = count === 0 || metrics.pollutionGrams.valid > 0;
+            var oxygen = metrics.oxygen.sum;
+            var annualCO2 = metrics.annualCarbon.sum * EQUIVALENCE_CONFIG.carbonToCO2;
+            var factorInput = document.getElementById('carAnnualEmissions');
+            var carFactor = parseSmartNumber(factorInput.value);
+            var validFactor = carFactor !== null && carFactor > 0;
+            var isEuropeanPreset = document.getElementById('carFactorPreset').value !== 'custom';
+
+            document.getElementById('statCount').textContent = formatNumber(count, '', 0);
+            document.getElementById('statBenefits').textContent = formatNumber(metrics.benefits, '\u20ac', 2);
+            document.getElementById('statCarbon').textContent = formatNumber(metrics.storedCarbon, 'kg', 2);
+            document.getElementById('statOxygen').textContent = oxygenAvailable
+                ? formatAnnualMass(oxygen, 'kg de O\u2082/a\u00f1o') : 'Sin datos';
+            document.getElementById('statPeople').textContent = formatEquivalent(oxygenAvailable
+                ? oxygen / EQUIVALENCE_CONFIG.oxygenKgPerPersonYear : null);
+            document.getElementById('statCO2').textContent = carbonAvailable
+                ? formatAnnualMass(annualCO2, 'kg de CO\u2082/a\u00f1o') : 'Sin datos';
+            document.getElementById('statCars').textContent = validFactor
+                ? formatEquivalent(carbonAvailable ? annualCO2 / carFactor : null)
+                : 'Falta factor';
+            document.getElementById('statPollution').textContent = pollutionAvailable
+                ? formatAnnualMass(metrics.pollutionGrams.sum / 1000, 'kg/a\u00f1o') : 'Sin datos';
+
+            factorInput.setAttribute('aria-invalid', validFactor ? 'false' : 'true');
+            document.getElementById('carFactorError').hidden = validFactor;
+            document.getElementById('carReference').textContent = validFactor
+                ? (isEuropeanPreset ? 'Escenario Europa: ' : 'Referencia personalizada: ') +
+                    formatNumber(carFactor / 1000, '', isEuropeanPreset ? 1 : 3) +
+                    ' t de CO\u2082/coche/a\u00f1o (' +
+                    formatNumber(carFactor, '', Number.isInteger(carFactor) ? 0 : 2) + ' kg).'
+                : 'Revisa las emisiones del coche en \u00abC\u00f3mo se calcula\u00bb.';
+            document.getElementById('oxygenEquation').textContent = oxygenAvailable
+                ? formatNumber(oxygen, '', 2) + ' kg de O\u2082/a\u00f1o \u00f7 ' + EQUIVALENCE_CONFIG.oxygenKgPerPersonYear + ' = ' +
+                    formatEquivalent(oxygen / EQUIVALENCE_CONFIG.oxygenKgPerPersonYear) + ' personas durante un a\u00f1o'
+                : 'Sin datos de producci\u00f3n de ox\u00edgeno para calcular la equivalencia.';
+            document.getElementById('carEquation').textContent = !carbonAvailable
+                ? 'Sin datos de secuestro bruto anual de carbono para calcular la equivalencia.'
+                : !validFactor ? 'Introduce un factor de emisiones del coche mayor que cero.'
+                : formatNumber(metrics.annualCarbon.sum, '', 2) + ' kg C/a\u00f1o \u00d7 44/12 = ' +
+                    formatNumber(annualCO2, '', 2) + ' kg CO\u2082/a\u00f1o; \u00f7 ' +
+                    formatNumber(carFactor, '', Number.isInteger(carFactor) ? 0 : 2) + ' = ' +
+                    formatEquivalent(annualCO2 / carFactor) + ' coches durante un a\u00f1o';
+
+            updateMetricCoverage('oxygenCoverage', metrics.oxygen, count, 'producci\u00f3n de ox\u00edgeno');
+            updateMetricCoverage('carbonCoverage', metrics.annualCarbon, count, 'secuestro bruto anual de carbono');
+            updateMetricCoverage('pollutionCoverage', metrics.pollutionGrams, count, 'contaminaci\u00f3n eliminada');
+        }
+
+        function applyArboladoFilters() {
+            var species = document.getElementById('filterSpecies').value;
+            var maintenance = document.getElementById('filterMto').value;
+            var minBenefits = parseSmartNumber(document.getElementById('filterBenefits').value);
+            var minCarbon = parseSmartNumber(document.getElementById('filterCarbon').value);
+            var minOxygen = parseSmartNumber(document.getElementById('filterOxygen').value);
+            var onlyPending = document.getElementById('filterPending').checked;
+
+            var filtered = allArboladoFeatures.filter(function(feature) {
+                var props = feature.properties || {};
+                var especie = String(getPropertyValue(props, 'ESPECIE') || '').trim();
+                var benefits = parseSmartNumber(getPropertyValue(props, 'Beneficios anuales totales'));
+                var carbon = parseSmartNumber(getPropertyValue(props, 'Almacenamiento de carbono (kg)'));
+                var oxygen = getExactMetric(props, 'Produccion de oxigeno (kg/ano)');
+                var pending = getPropertyValue(props, 'ACTUACIONES_PENDIENTES');
+                var maintenanceValue = getPropertyValue(props, 'REQUIERE_MTO_PERIODICO');
+
+                if (species && especie !== species) return false;
+                if (!featureMatchesMaintenance(maintenanceValue, maintenance)) return false;
+                if (minBenefits !== null && (benefits === null || benefits < minBenefits)) return false;
+                if (minCarbon !== null && (carbon === null || carbon < minCarbon)) return false;
+                if (minOxygen !== null && (oxygen === null || oxygen < minOxygen)) return false;
+                if (onlyPending && !featureHasPendingActions(pending)) return false;
+                return true;
+            });
+
+            layer_ARBOLADOYBENEFICIOSECOSISTMICOS_3.clearLayers();
+            layer_ARBOLADOYBENEFICIOSECOSISTMICOS_3.addData(filtered);
+            updateStats(filtered);
+            refreshTreeAnalysis();
+        }
+
+        function resetArboladoFilters() {
+            document.getElementById('filterSpecies').value = '';
+            document.getElementById('filterMto').value = '';
+            document.getElementById('filterBenefits').value = '';
+            document.getElementById('filterCarbon').value = '';
+            document.getElementById('filterOxygen').value = '';
+            document.getElementById('filterPending').checked = false;
+            layer_ARBOLADOYBENEFICIOSECOSISTMICOS_3.clearLayers();
+            layer_ARBOLADOYBENEFICIOSECOSISTMICOS_3.addData(allArboladoFeatures);
+            updateStats(allArboladoFeatures);
+            refreshTreeAnalysis();
+        }
+
+        var legendLayerControls = [
+            { inputId: 'toggleArbolado', stateId: 'stateArbolado', layer: layer_ARBOLADOYBENEFICIOSECOSISTMICOS_3 },
+            { inputId: 'toggleZonasVerdes', stateId: 'stateZonasVerdes', layer: layer_ZONAS_VERDES_GUADIX_2 },
+            { inputId: 'toggleViario', stateId: 'stateViario', layer: layer_VIARIO_GUADIX_2 }
+        ];
+        function syncLayerLegend() {
+            legendLayerControls.forEach(function(item) {
+                var visible = map.hasLayer(item.layer);
+                var input = document.getElementById(item.inputId);
+                input.checked = visible;
+                input.parentElement.setAttribute('data-visible', String(visible));
+                document.getElementById(item.stateId).textContent = visible ? 'Visible' : 'Oculto';
+            });
+        }
+        function initLayerLegend() {
+            legendLayerControls.forEach(function(item) {
+                document.getElementById(item.inputId).addEventListener('change', function(event) {
+                    if (event.target.checked) map.addLayer(item.layer);
+                    else map.removeLayer(item.layer);
+                    syncLayerLegend();
+                });
+            });
+            map.on('layeradd layerremove', function(event) {
+                var relevant = legendLayerControls.some(function(item) { return item.layer === event.layer; });
+                if (relevant) {
+                    syncLayerLegend();
+                    refreshZoneLayerState();
+                    if (event.layer === layer_ARBOLADOYBENEFICIOSECOSISTMICOS_3) applyTreeMapView();
+                }
+            });
+            syncLayerLegend();
+        }
+        function syncCarFactorSettings() {
+            var preset = document.getElementById('carFactorPreset').value;
+            var custom = preset === 'custom';
+            document.getElementById('carCustomField').hidden = !custom;
+            if (!custom) document.getElementById('carAnnualEmissions').value = preset;
+        }
+
+        function syncResponsivePanelPosition() {
+            var toggle = document.getElementById('panelToggle');
+            var panel = document.getElementById('sidePanel');
+            if (window.innerWidth <= 820) {
+                var headerBottom = document.getElementById('appHeader').getBoundingClientRect().bottom;
+                var toggleTop = Math.ceil(headerBottom + 10);
+                toggle.style.top = toggleTop + 'px';
+                panel.style.top = (toggleTop + toggle.offsetHeight + 12) + 'px';
+            } else {
+                toggle.style.removeProperty('top');
+                panel.style.removeProperty('top');
+            }
+        }
+
+        function initEnhancedUI() {
+            syncResponsivePanelPosition();
+            window.addEventListener('resize', syncResponsivePanelPosition);
+            initLayerLegend();
+            document.getElementById('carFactorPreset').value = String(EQUIVALENCE_CONFIG.defaultCarCO2KgPerYear);
+            syncCarFactorSettings();
+            populateSpeciesFilter();
+            updateStats(allArboladoFeatures);
+
+            document.getElementById('carFactorPreset').addEventListener('change', function() {
+                syncCarFactorSettings();
+                updateStats(currentArboladoFeatures);
+                if (this.value === 'custom') {
+                    document.getElementById('equivalenceSettings').open = true;
+                    document.getElementById('carAnnualEmissions').focus();
+                }
+            });
+            document.getElementById('carAnnualEmissions').addEventListener('input', function() {
+                updateStats(currentArboladoFeatures);
+            });
+            document.getElementById('resetCarFactorBtn').addEventListener('click', function() {
+                document.getElementById('carFactorPreset').value = String(EQUIVALENCE_CONFIG.defaultCarCO2KgPerYear);
+                syncCarFactorSettings();
+                updateStats(currentArboladoFeatures);
+            });
+
+            document.getElementById('applyFiltersBtn').addEventListener('click', applyArboladoFilters);
+            document.getElementById('resetFiltersBtn').addEventListener('click', resetArboladoFilters);
+            ['filterSpecies', 'filterMto', 'filterBenefits', 'filterCarbon', 'filterOxygen', 'filterPending'].forEach(function(id) {
+                var el = document.getElementById(id);
+                if (!el) return;
+                var eventName = el.tagName === 'SELECT' || el.type === 'checkbox' ? 'change' : 'input';
+                el.addEventListener(eventName, applyArboladoFilters);
+            });
+
+            document.getElementById('panelToggle').addEventListener('click', function() {
+                setSidePanelOpen(document.getElementById('sidePanel').classList.contains('collapsed'));
+            });
+        }
+
+        // Analytics are computed exclusively from the loaded tree inventory.
+        // Keep annual carbon, CO2-equivalent and accumulated carbon as distinct metrics.
+        var TREE_METRICS = {
+            oxygen: { label: 'Producci\u00f3n anual de O\u2082', badge: 'O\u2082', unit: 'kg O\u2082/a\u00f1o', meanUnit: 'kg O\u2082/\u00e1rbol/a\u00f1o', field: 'Produccion de oxigeno (kg/ano)', factor: 1, colors: ['#dcefdc', '#a1d1a5', '#61ad75', '#2b804e', '#125331'] },
+            annualCO2: { label: 'Fijaci\u00f3n anual de CO\u2082 equivalente', badge: 'CO\u2082', unit: 'kg CO\u2082/a\u00f1o', meanUnit: 'kg CO\u2082/\u00e1rbol/a\u00f1o', field: 'Secuestro bruto de carbono (kg/ano)', factor: EQUIVALENCE_CONFIG.carbonToCO2, colors: ['#dfedf6', '#a1c9df', '#62a4c5', '#317b9e', '#154f70'] },
+            annualCarbon: { label: 'Secuestro bruto anual de carbono (C)', badge: 'C anual', unit: 'kg C/a\u00f1o', meanUnit: 'kg C/\u00e1rbol/a\u00f1o', field: 'Secuestro bruto de carbono (kg/ano)', factor: 1, colors: ['#f5e9cd', '#e7cb8e', '#d2aa56', '#a67b2d', '#79531b'] },
+            storedCarbon: { label: 'Carbono almacenado (acumulado)', badge: 'C acumulado', unit: 'kg C', meanUnit: 'kg C/\u00e1rbol', field: 'Almacenamiento de carbono (kg)', factor: 1, colors: ['#eae3f3', '#cbb6df', '#aa8ac7', '#855dac', '#573577'] }
+        };
+        var treeMetricCache = new WeakMap();
+        var treeInventoryScales = Object.create(null);
+        var analyticsReady = false;
+
+        function treeMetricValue(feature, key) {
+            var definition = TREE_METRICS[key];
+            if (!definition || !feature) return null;
+            var cached = treeMetricCache.get(feature);
+            if (!cached) { cached = Object.create(null); treeMetricCache.set(feature, cached); }
+            if (!Object.prototype.hasOwnProperty.call(cached, key)) {
+                var value = getExactMetric(feature.properties || {}, definition.field);
+                var converted = value === null ? null : value * definition.factor;
+                cached[key] = converted !== null && Number.isFinite(converted) ? converted : null;
+            }
+            return cached[key];
+        }
+        function treeSpeciesName(feature) {
+            var raw = getPropertyValue(feature.properties || {}, 'ESPECIE');
+            return raw == null ? '' : String(raw).trim();
+        }
+        function analyticalNumber(value) {
+            if (value === null || !Number.isFinite(value)) return 'Sin datos';
+            if (value !== 0 && Math.abs(value) < 0.01) return value < 0 ? '> -0,01' : '< 0,01';
+            return formatNumber(value, '', 2);
+        }
+        function analyticalText(value, unit) {
+            return analyticalNumber(value) + (value === null ? '' : ' ' + unit);
+        }
+        function makeTextElement(tag, className, text) {
+            var element = document.createElement(tag);
+            if (className) element.className = className;
+            if (text !== undefined) element.textContent = text;
+            return element;
+        }
+        function computeSpeciesRanking(features, key, basis) {
+            var groups = new Map();
+            var missingSpecies = 0;
+            var valid = 0;
+            features.forEach(function(feature) {
+                var name = treeSpeciesName(feature);
+                if (!name) { missingSpecies++; return; }
+                if (!groups.has(name)) groups.set(name, { name: name, total: 0, count: 0, valid: 0 });
+                var group = groups.get(name);
+                group.count++;
+                var value = treeMetricValue(feature, key);
+                if (value !== null) { group.total += value; group.valid++; valid++; }
+            });
+            var rows = Array.from(groups.values()).filter(function(group) { return group.valid > 0; });
+            rows.forEach(function(group) {
+                group.average = group.total / group.valid;
+                group.score = basis === 'average' ? group.average : group.total;
+            });
+            rows.sort(function(a, b) { return b.score - a.score || a.name.localeCompare(b.name, 'es'); });
+            return { rows: rows.slice(0, 10), eligibleSpecies: rows.length, valid: valid, missingSpecies: missingSpecies };
+        }
+        function updateSpeciesRanking() {
+            if (!analyticsReady) return;
+            var key = document.getElementById('rankingMetric').value;
+            var basis = document.getElementById('rankingBasis').value;
+            var definition = TREE_METRICS[key];
+            var result = computeSpeciesRanking(currentArboladoFeatures, key, basis);
+            var host = document.getElementById('speciesRankingList');
+            var selectedSpecies = document.getElementById('filterSpecies').value;
+            host.replaceChildren();
+            document.getElementById('rankingBadge').textContent = definition.badge;
+            document.getElementById('rankingClearSpeciesBtn').hidden = !selectedSpecies;
+            document.getElementById('rankingContext').textContent =
+                formatNumber(currentArboladoFeatures.length, '', 0) + ' \u00e1rboles seleccionados \u00b7 ' +
+                formatNumber(result.eligibleSpecies, '', 0) + ' especies con dato. ' +
+                (basis === 'average' ? 'Orden por media por \u00e1rbol.' : 'Orden por suma de cada especie.');
+            if (!result.rows.length) {
+                host.appendChild(makeTextElement('li', 'ranking-empty', currentArboladoFeatures.length
+                    ? 'No hay especies identificadas con datos de esta variable en la selecci\u00f3n.'
+                    : 'Ning\u00fan \u00e1rbol cumple los filtros actuales.'));
+            }
+            var largest = result.rows.length ? Math.max(0, result.rows[0].score) : 0;
+            result.rows.forEach(function(row, index) {
+                var item = makeTextElement('li', 'ranking-item');
+                var button = makeTextElement('button', 'ranking-row');
+                button.type = 'button';
+                button.dataset.species = row.name;
+                button.setAttribute('aria-pressed', selectedSpecies === row.name ? 'true' : 'false');
+                button.title = selectedSpecies === row.name ? 'Quitar filtro de esta especie' : 'Filtrar esta especie';
+                button.appendChild(makeTextElement('span', 'ranking-position', String(index + 1)));
+                var content = makeTextElement('span', 'ranking-main');
+                content.appendChild(makeTextElement('span', 'ranking-name', row.name));
+                var nombreComunRanking = GUIA_ESPECIES_GUADIX[row.name];
+                if (nombreComunRanking) content.appendChild(makeTextElement('span', 'ranking-common', nombreComunRanking.comun));
+                content.appendChild(makeTextElement('span', 'ranking-value', analyticalText(row.score, basis === 'average' ? definition.meanUnit : definition.unit)));
+                var countText = formatNumber(row.count, '', 0) + (row.count === 1 ? ' \u00e1rbol' : ' \u00e1rboles');
+                if (row.valid !== row.count) countText += ' \u00b7 ' + row.valid + ' con dato (parcial)';
+                content.appendChild(makeTextElement('span', 'ranking-meta', countText));
+                content.appendChild(makeTextElement('span', 'ranking-meta', basis === 'average'
+                    ? 'Total: ' + analyticalText(row.total, definition.unit)
+                    : 'Media: ' + analyticalText(row.average, definition.meanUnit)));
+                var track = makeTextElement('span', 'ranking-track');
+                track.setAttribute('aria-hidden', 'true');
+                var fill = makeTextElement('span', 'ranking-fill');
+                fill.style.width = (largest > 0 ? Math.max(0, row.score) / largest * 100 : 0) + '%';
+                fill.style.backgroundColor = definition.colors[3];
+                track.appendChild(fill);
+                content.appendChild(track);
+                button.appendChild(content);
+                button.addEventListener('click', function() {
+                    document.getElementById('filterSpecies').value = selectedSpecies === row.name ? '' : row.name;
+                    applyArboladoFilters();
+                });
+                item.appendChild(button);
+                host.appendChild(item);
+            });
+            var coverage = 'Mostrando ' + result.rows.length + ' de ' + result.eligibleSpecies + ' especies con dato. ' +
+                result.valid + ' \u00e1rboles con especie y valor v\u00e1lido de ' + currentArboladoFeatures.length + ' seleccionados.';
+            if (result.missingSpecies) coverage += ' Sin especie identificada: ' + result.missingSpecies + ' (no se agrupan como una especie).';
+            document.getElementById('rankingCoverage').textContent = coverage;
+        }
+        function buildInventoryScales() {
+            Object.keys(TREE_METRICS).forEach(function(key) {
+                var maximum = 0;
+                allArboladoFeatures.forEach(function(feature) {
+                    var value = treeMetricValue(feature, key);
+                    if (value !== null && value > maximum) maximum = value;
+                });
+                treeInventoryScales[key] = maximum;
+            });
+        }
+        function treeThemeStyle(value, key) {
+            var definition = TREE_METRICS[key];
+            var maximum = treeInventoryScales[key] || 0;
+            var base = { weight: 1.15, opacity: 1, fill: true, fillOpacity: 0.82, dashArray: '', interactive: true };
+            if (value === null) return Object.assign(base, { radius: 3.5, color: '#828c86', fillColor: '#e3e7e4', fillOpacity: 0.7, dashArray: '2,2' });
+            if (value < 0) return Object.assign(base, { radius: 4, color: '#a64e3e', fillColor: '#f3d4c9', dashArray: '2,2' });
+            if (value === 0 || maximum <= 0) return Object.assign(base, { radius: 3, color: '#6f8576', fillColor: '#ffffff', fillOpacity: 0.95 });
+            var ratio = Math.max(0, Math.min(1, value / maximum));
+            var colorIndex = Math.min(4, Math.floor(ratio * 5));
+            // Circle area is proportional to the value, except for a 3px visibility floor.
+            return Object.assign(base, { radius: Math.max(3, 24 * Math.sqrt(ratio)), color: definition.colors[4], fillColor: definition.colors[colorIndex] });
+        }
+        function createTreeMetricTooltip(feature, activeKey) {
+            var host = makeTextElement('div');
+            host.appendChild(makeTextElement('span', 'tree-tooltip-name', treeSpeciesName(feature) || 'Especie no indicada'));
+            ['oxygen', 'annualCO2', 'annualCarbon', 'storedCarbon'].forEach(function(key) {
+                var metric = TREE_METRICS[key];
+                var label = key === 'oxygen' ? 'O\u2082 anual' : key === 'annualCO2' ? 'CO\u2082 eq. anual' : key === 'annualCarbon' ? 'C bruto anual' : 'C almacenado';
+                host.appendChild(makeTextElement('span', 'tree-tooltip-row' + (key === activeKey ? ' tree-tooltip-active' : ''),
+                    label + ': ' + analyticalText(treeMetricValue(feature, key), metric.unit)));
+            });
+            return host;
+        }
+        function updateTreeThemeLegend(key, counts) {
+            var host = document.getElementById('treeThemeLegend');
+            var help = document.getElementById('treeViewHelp');
+            host.replaceChildren();
+            var normal = key === 'normal';
+            host.hidden = normal || !map.hasLayer(layer_ARBOLADOYBENEFICIOSECOSISTMICOS_3);
+            if (normal) {
+                help.textContent = 'Vista normal. Elige una variable para destacar los \u00e1rboles con mayor valor mediante c\u00edrculos de distinto tama\u00f1o y color.';
+                return;
+            }
+            var definition = TREE_METRICS[key];
+            var maximum = treeInventoryScales[key] || 0;
+            host.appendChild(makeTextElement('h2', 'theme-legend-title', definition.label));
+            host.appendChild(makeTextElement('span', 'theme-legend-units', definition.unit + ' \u00b7 valor por \u00e1rbol'));
+            if (maximum > 0) {
+                var samples = makeTextElement('div', 'theme-samples');
+                [0.0625, 0.25, 1].forEach(function(fraction) {
+                    var value = maximum * fraction;
+                    var sample = makeTextElement('div', 'theme-sample');
+                    var circle = makeTextElement('span', 'theme-sample-circle');
+                    var style = treeThemeStyle(value, key);
+                    circle.style.width = (style.radius * 2) + 'px';
+                    circle.style.height = (style.radius * 2) + 'px';
+                    circle.style.backgroundColor = style.fillColor;
+                    circle.style.borderColor = style.color;
+                    circle.setAttribute('aria-hidden', 'true');
+                    sample.appendChild(circle);
+                    var decimals = value >= 1 ? 1 : Math.min(6, Math.ceil(-Math.log10(value)) + 1);
+                    sample.appendChild(makeTextElement('span', 'theme-sample-value', formatNumber(value, '', decimals)));
+                    samples.appendChild(sample);
+                });
+                host.appendChild(samples);
+            } else {
+                host.appendChild(makeTextElement('p', 'theme-legend-note', 'No hay valores positivos de esta variable en el inventario.'));
+            }
+            host.appendChild(makeTextElement('p', 'theme-legend-note', 'Mayor tama\u00f1o y tono m\u00e1s oscuro = mayor valor. Escala fija para todo el inventario; radio m\u00ednimo de 3 px.'));
+            var special = 'Gris discontinuo: sin dato \u00b7 hueco: cero.';
+            if (counts.negative) special += ' Rojo: negativo.';
+            host.appendChild(makeTextElement('p', 'theme-legend-note', special));
+            var explanation = 'Mayor c\u00edrculo = mayor valor por \u00e1rbol. ' +
+                counts.valid + ' de ' + currentArboladoFeatures.length + ' seleccionados con dato. La escala se mantiene al filtrar.';
+            if (key === 'annualCO2') explanation += ' CO\u2082 equivalente = secuestro bruto de C \u00d7 44/12.';
+            if (key === 'storedCarbon') explanation += ' Reserva acumulada; no es fijaci\u00f3n anual.';
+            if (!map.hasLayer(layer_ARBOLADOYBENEFICIOSECOSISTMICOS_3)) explanation += ' La capa de arbolado est\u00e1 oculta.';
+            help.textContent = explanation;
+        }
+        function applyTreeMapView() {
+            if (!analyticsReady) return;
+            var key = document.getElementById('treeMapView').value;
+            var counts = { valid: 0, negative: 0 };
+            var normal = key === 'normal';
+            var layers = [];
+            function collect(layer, parentFeature) {
+                if (!layer) return;
+                // In MultiPoint exports, child circles do not have .feature.
+                // Resolve their data from the point factory or the enclosing group.
+                var feature = layer._treeSourceFeature || layer.feature || parentFeature;
+                if (typeof layer.setRadius === 'function' && typeof layer.setStyle === 'function' && feature) {
+                    layers.push({ marker: layer, feature: feature });
+                } else if (typeof layer.eachLayer === 'function') {
+                    layer.eachLayer(function(child) { collect(child, feature); });
+                }
+            }
+            layer_ARBOLADOYBENEFICIOSECOSISTMICOS_3.eachLayer(function(layer) { collect(layer, null); });
+            currentArboladoFeatures.forEach(function(feature) {
+                if (normal) return;
+                var value = treeMetricValue(feature, key);
+                if (value !== null) { counts.valid++; if (value < 0) counts.negative++; }
+            });
+            // Large circles below small circles, so smaller nearby trees remain clickable.
+            if (!normal) layers.sort(function(a, b) {
+                var va = treeMetricValue(a.feature, key), vb = treeMetricValue(b.feature, key);
+                return (vb === null ? -Infinity : vb) - (va === null ? -Infinity : va);
+            });
+            layers.forEach(function(item) {
+                var layer = item.marker;
+                var feature = item.feature;
+                var style = normal ? style_ARBOLADOYBENEFICIOSECOSISTMICOS_3_0(feature) : treeThemeStyle(treeMetricValue(feature, key), key);
+                layer.setStyle(style);
+                layer.setRadius(style.radius);
+                var tooltip = createTreeMetricTooltip(feature, key);
+                if (layer.getTooltip && layer.getTooltip()) layer.setTooltipContent(tooltip);
+                else layer.bindTooltip(tooltip, { direction: 'top', opacity: 0.98, className: 'tree-analysis-tooltip' });
+                if (layer.bringToFront) layer.bringToFront();
+            });
+            updateTreeThemeLegend(key, counts);
+        }
+        function refreshTreeAnalysis() {
+            if (!analyticsReady) return;
+            updateSpeciesRanking();
+            applyTreeMapView();
+        }
+        function initAnalyticsUI() {
+            analyticsReady = true;
+            buildInventoryScales();
+            document.getElementById('rankingMetric').addEventListener('change', updateSpeciesRanking);
+            document.getElementById('rankingBasis').addEventListener('change', updateSpeciesRanking);
+            document.getElementById('treeMapView').addEventListener('change', applyTreeMapView);
+            document.getElementById('rankingShowMapBtn').addEventListener('click', function() {
+                document.getElementById('treeMapView').value = document.getElementById('rankingMetric').value;
+                if (!map.hasLayer(layer_ARBOLADOYBENEFICIOSECOSISTMICOS_3)) map.addLayer(layer_ARBOLADOYBENEFICIOSECOSISTMICOS_3);
+                applyTreeMapView();
+                if (window.innerWidth <= 820) setSidePanelOpen(false);
+            });
+            document.getElementById('rankingClearSpeciesBtn').addEventListener('click', function() {
+                document.getElementById('filterSpecies').value = '';
+                applyArboladoFilters();
+            });
+            L.DomEvent.disableClickPropagation(document.getElementById('treeThemeLegend'));
+            L.DomEvent.disableScrollPropagation(document.getElementById('treeThemeLegend'));
+            refreshTreeAnalysis();
+        }
+
+        // Independent local autocomplete: no plugin cache, remote services or clipped list.
+        var zoneSearchState = { records: [], matches: [], activeIndex: -1, selected: null, highlight: null, ready: false };
+        function setSidePanelOpen(open) {
+            var panel = document.getElementById('sidePanel');
+            panel.classList.toggle('collapsed', !open);
+            document.body.classList.toggle('panel-open', open);
+            document.getElementById('panelToggle').setAttribute('aria-expanded', String(open));
+            if (!open) closeZoneSuggestions();
+        }
+        function buildZoneSearchIndex() {
+            var grouped = new Map();
+            [
+                { group: layer_ZONAS_VERDES_GUADIX_2, type: 'Zona verde' },
+                { group: layer_VIARIO_GUADIX_2, type: 'Viario' }
+            ].forEach(function(source) {
+                source.group.eachLayer(function(layer) {
+                    if (!layer.getBounds || !layer.feature) return;
+                    var bounds = layer.getBounds();
+                    if (!bounds.isValid()) return;
+                    var props = layer.feature.properties || {};
+                    var name = String(props.NOMBRE == null ? '' : props.NOMBRE).trim();
+                    var id = String(props.ID == null ? '' : props.ID).trim();
+                    if (!name && !id) return;
+                    if (!name) name = source.type + ' ' + id;
+                    var key = source.type + '|' + normalizeText(name);
+                    if (!grouped.has(key)) grouped.set(key, { name: name, type: source.type, group: source.group, layers: [], ids: [] });
+                    var record = grouped.get(key);
+                    record.layers.push(layer);
+                    if (id && record.ids.indexOf(id) === -1) record.ids.push(id);
+                });
+            });
+            zoneSearchState.records = Array.from(grouped.values());
+            zoneSearchState.records.forEach(function(record) {
+                record.normalName = normalizeText(record.name);
+                record.searchText = normalizeText(record.name + ' ' + record.ids.join(' ') + ' ' + record.type);
+            });
+            zoneSearchState.records.sort(function(a, b) { return a.name.localeCompare(b.name, 'es') || a.type.localeCompare(b.type, 'es'); });
+        }
+        function closeZoneSuggestions() {
+            document.getElementById('zoneSuggestionPopup').hidden = true;
+            var input = document.getElementById('zoneSearchInput');
+            input.setAttribute('aria-expanded', 'false');
+            input.removeAttribute('aria-activedescendant');
+            zoneSearchState.activeIndex = -1;
+        }
+        function positionZoneSuggestions() {
+            var popup = document.getElementById('zoneSuggestionPopup');
+            if (popup.hidden) return;
+            var rect = document.getElementById('zoneSearchWrap').getBoundingClientRect();
+            var panel = document.getElementById('sidePanel').getBoundingClientRect();
+            if (rect.bottom < panel.top || rect.top > panel.bottom || document.getElementById('sidePanel').classList.contains('collapsed')) {
+                closeZoneSuggestions(); return;
+            }
+            var below = window.innerHeight - rect.bottom - 12;
+            var above = rect.top - 12;
+            var goUp = below < 170 && above > below;
+            var totalHeight = Math.min(300, goUp ? above : below);
+            totalHeight = Math.max(90, totalHeight);
+            popup.style.width = Math.min(rect.width, window.innerWidth - 20) + 'px';
+            popup.style.left = Math.max(10, Math.min(rect.left, window.innerWidth - rect.width - 10)) + 'px';
+            document.getElementById('zoneSuggestions').style.maxHeight = Math.max(45, totalHeight - 45) + 'px';
+            popup.style.top = goUp ? '' : (rect.bottom + 5) + 'px';
+            popup.style.bottom = goUp ? (window.innerHeight - rect.top + 5) + 'px' : '';
+        }
+        function setZoneActiveIndex(index) {
+            var options = document.querySelectorAll('#zoneSuggestions .zone-option');
+            if (!options.length) return;
+            index = Math.max(0, Math.min(index, options.length - 1));
+            zoneSearchState.activeIndex = index;
+            options.forEach(function(option, i) { option.setAttribute('aria-selected', i === index ? 'true' : 'false'); });
+            document.getElementById('zoneSearchInput').setAttribute('aria-activedescendant', options[index].id);
+            // Scroll only the suggestion list, never the entire panel or page.
+            var list = document.getElementById('zoneSuggestions');
+            var item = options[index];
+            if (item.offsetTop < list.scrollTop) list.scrollTop = item.offsetTop;
+            else if (item.offsetTop + item.offsetHeight > list.scrollTop + list.clientHeight)
+                list.scrollTop = item.offsetTop + item.offsetHeight - list.clientHeight;
+        }
+        function renderZoneSuggestions() {
+            if (!zoneSearchState.ready) return;
+            var input = document.getElementById('zoneSearchInput');
+            var query = normalizeText(input.value);
+            var tokens = query.split(' ').filter(Boolean);
+            var matches = zoneSearchState.records.filter(function(record) {
+                return tokens.every(function(token) { return record.searchText.indexOf(token) !== -1; });
+            });
+            matches.sort(function(a, b) {
+                var aPrefix = query && a.normalName.indexOf(query) === 0 ? 0 : 1;
+                var bPrefix = query && b.normalName.indexOf(query) === 0 ? 0 : 1;
+                return aPrefix - bPrefix || a.name.localeCompare(b.name, 'es') || a.type.localeCompare(b.type, 'es');
+            });
+            zoneSearchState.matches = matches.slice(0, 50);
+            zoneSearchState.activeIndex = -1;
+            var host = document.getElementById('zoneSuggestions');
+            host.replaceChildren();
+            host.scrollTop = 0;
+            var countText = matches.length === 1 ? '1 zona encontrada' : matches.length + ' zonas encontradas';
+            if (matches.length > 50) countText += ' \u00b7 primeras 50; escribe m\u00e1s para afinar';
+            document.getElementById('zoneSuggestionHeading').textContent = countText;
+            zoneSearchState.matches.forEach(function(record, index) {
+                var option = makeTextElement('div', 'zone-option');
+                option.id = 'zone-option-' + index;
+                option.setAttribute('role', 'option');
+                option.setAttribute('aria-selected', 'false');
+                option.appendChild(makeTextElement('span', 'zone-option-name', record.name));
+                var meta = record.type + (record.ids.length ? ' \u00b7 ID ' + record.ids.join(', ') : '');
+                if (record.layers.length > 1) meta += ' \u00b7 ' + record.layers.length + ' pol\u00edgonos';
+                if (!map.hasLayer(record.group)) meta += ' \u00b7 capa oculta (se activar\u00e1)';
+                option.appendChild(makeTextElement('span', 'zone-option-meta', meta));
+                option.addEventListener('pointerdown', function(event) { event.preventDefault(); });
+                option.addEventListener('click', function() { selectZoneRecord(record); });
+                host.appendChild(option);
+            });
+            if (!matches.length) host.appendChild(makeTextElement('div', 'zone-empty', zoneSearchState.records.length
+                ? 'No hay coincidencias. Prueba con una parte del nombre o con el c\u00f3digo.'
+                : 'No hay zonas con nombre o c\u00f3digo disponibles en la capa.'));
+            input.removeAttribute('aria-activedescendant');
+            input.setAttribute('aria-expanded', 'true');
+            document.getElementById('zoneSuggestionPopup').hidden = false;
+            document.getElementById('zoneClearBtn').hidden = !input.value;
+            positionZoneSuggestions();
+        }
+        function clearZoneHighlight() {
+            if (zoneSearchState.highlight) { map.removeLayer(zoneSearchState.highlight); zoneSearchState.highlight = null; }
+        }
+        function selectZoneRecord(record) {
+            zoneSearchState.selected = record;
+            document.getElementById('zoneSearchInput').value = record.name;
+            document.getElementById('zoneClearBtn').hidden = false;
+            closeZoneSuggestions();
+            clearZoneHighlight();
+            if (!map.hasLayer(record.group)) map.addLayer(record.group);
+            var bounds = L.latLngBounds([]);
+            record.layers.forEach(function(layer) { bounds.extend(layer.getBounds()); });
+            var features = record.layers.map(function(layer) { return layer.feature; });
+            zoneSearchState.highlight = L.geoJSON({ type: 'FeatureCollection', features: features }, {
+                pane: 'pane_ZONE_SEARCH_HIGHLIGHT', interactive: false,
+                style: { color: '#243f60', weight: 3, dashArray: '7,4', fill: false, opacity: 1, interactive: false }
+            }).addTo(map);
+            var status = document.getElementById('zoneSelectionStatus');
+            status.textContent = record.type + ' localizada: ' + record.name + '. Los filtros del arbolado no cambian.';
+            status.hidden = false;
+            var panelOpen = !document.getElementById('sidePanel').classList.contains('collapsed');
+            var leftPadding = panelOpen && window.innerWidth > 820 ? Math.ceil(document.getElementById('sidePanel').getBoundingClientRect().right + 18) : 22;
+            if (window.innerWidth <= 820) setSidePanelOpen(false);
+            if (bounds.isValid()) map.fitBounds(bounds, { paddingTopLeft: [leftPadding, 115], paddingBottomRight: [65, 65], maxZoom: 19 });
+        }
+        function resetZoneSearch() {
+            zoneSearchState.selected = null;
+            clearZoneHighlight();
+            document.getElementById('zoneSearchInput').value = '';
+            document.getElementById('zoneClearBtn').hidden = true;
+            document.getElementById('zoneSelectionStatus').hidden = true;
+            closeZoneSuggestions();
+        }
+        function refreshZoneLayerState() {
+            if (!zoneSearchState.ready) return;
+            if (zoneSearchState.selected && !map.hasLayer(zoneSearchState.selected.group)) clearZoneHighlight();
+            if (!document.getElementById('zoneSuggestionPopup').hidden) renderZoneSuggestions();
+        }
+        function initLocalZoneSearch() {
+            map.createPane('pane_ZONE_SEARCH_HIGHLIGHT');
+            map.getPane('pane_ZONE_SEARCH_HIGHLIGHT').style.zIndex = 402;
+            map.getPane('pane_ZONE_SEARCH_HIGHLIGHT').style.pointerEvents = 'none';
+            buildZoneSearchIndex();
+            zoneSearchState.ready = true;
+            var input = document.getElementById('zoneSearchInput');
+            input.addEventListener('focus', renderZoneSuggestions);
+            input.addEventListener('input', function() {
+                if (zoneSearchState.selected && this.value !== zoneSearchState.selected.name) {
+                    clearZoneHighlight(); zoneSearchState.selected = null;
+                    document.getElementById('zoneSelectionStatus').hidden = true;
+                }
+                renderZoneSuggestions();
+            });
+            input.addEventListener('keydown', function(event) {
+                var open = !document.getElementById('zoneSuggestionPopup').hidden;
+                if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                    event.preventDefault();
+                    if (!open) renderZoneSuggestions();
+                    var index = zoneSearchState.activeIndex;
+                    setZoneActiveIndex(event.key === 'ArrowDown' ? index + 1 : index < 0 ? zoneSearchState.matches.length - 1 : index - 1);
+                } else if (event.key === 'Enter' && open) {
+                    event.preventDefault();
+                    var selected = zoneSearchState.matches[zoneSearchState.activeIndex < 0 ? 0 : zoneSearchState.activeIndex];
+                    if (selected) selectZoneRecord(selected);
+                } else if (event.key === 'Escape') {
+                    event.preventDefault(); closeZoneSuggestions();
+                } else if (event.key === 'Tab') closeZoneSuggestions();
+            });
+            document.getElementById('zoneListBtn').addEventListener('click', function() {
+                var wasOpen = !document.getElementById('zoneSuggestionPopup').hidden;
+                if (wasOpen) closeZoneSuggestions();
+                else { input.focus(); renderZoneSuggestions(); }
+            });
+            document.getElementById('zoneClearBtn').addEventListener('click', function() {
+                resetZoneSearch(); input.focus(); renderZoneSuggestions();
+            });
+            document.addEventListener('pointerdown', function(event) {
+                if (!document.getElementById('zoneSearchWrap').contains(event.target) && !document.getElementById('zoneSuggestionPopup').contains(event.target)) closeZoneSuggestions();
+            });
+            document.addEventListener('focusin', function(event) {
+                if (!document.getElementById('zoneSearchWrap').contains(event.target) && !document.getElementById('zoneSuggestionPopup').contains(event.target)) closeZoneSuggestions();
+            });
+            document.getElementById('sidePanel').addEventListener('scroll', positionZoneSuggestions, { passive: true });
+            window.addEventListener('resize', positionZoneSuggestions);
+            map.on('movestart', closeZoneSuggestions);
+            setSidePanelOpen(true);
+        }
+
+        initEnhancedUI();
+        initAnalyticsUI();
+        initLocalZoneSearch();
+        </script>        
+    </body>
+</html>

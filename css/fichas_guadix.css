@@ -1,0 +1,171 @@
+/* Fichas botánicas y rutas. Mantiene el lenguaje visual del visor original. */
+.leaflet-popup .leaflet-popup-content-wrapper {
+    border-radius: 16px;
+    box-shadow: 0 18px 40px rgba(28, 55, 39, .16);
+    overflow: hidden;
+}
+.leaflet-popup .leaflet-popup-content {
+    max-width: min(420px, calc(100vw - 55px));
+    margin: 13px 15px 15px;
+    font-family: Inter, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+}
+.ficha-arbol, .ficha-zona { color: #203328; }
+.ficha-heading { padding: 2px 0 10px; }
+.ficha-eyebrow {
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #3b815d;
+    font-weight: 800;
+    margin: 0 0 5px;
+}
+.leaflet-popup .ficha-heading h3 {
+    margin: 0;
+    font-size: 19px;
+    line-height: 1.2;
+    font-style: italic;
+    font-weight: 750;
+    color: #1d4531;
+}
+.leaflet-popup .ficha-zona .ficha-heading h3 { font-style: normal; }
+.ficha-common {
+    margin: 6px 0 0;
+    font-size: 14px;
+    font-weight: 650;
+    color: #5c7867;
+    line-height: 1.4;
+}
+.ficha-photo {
+    border-radius: 12px;
+    overflow: hidden;
+    background: #edf3ee;
+    min-height: 145px;
+    margin-bottom: 11px;
+}
+.ficha-photo-placeholder {
+    min-height: 145px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 7px;
+    padding: 14px;
+    box-sizing: border-box;
+    font-size: 12px;
+    color: #637d6d;
+    line-height: 1.5;
+}
+.ficha-photo-placeholder a { color: #1b6942; text-decoration: underline; }
+.ficha-photo-figure { margin: 0; padding: 0; }
+.ficha-species-img {
+    display: block;
+    width: 100%;
+    height: 160px;
+    object-fit: contain;
+    object-position: center;
+    background: #edf3ee;
+}
+.ficha-photo-figure figcaption {
+    padding: 5px 9px 6px;
+    font-size: 10px;
+    color: #5c7062;
+    line-height: 1.35;
+    background: #f3f7f3;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+.ficha-photo-figure figcaption a { color: inherit; text-decoration: underline; }
+.ficha-facts {
+    margin: 0 0 10px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 7px;
+}
+.ficha-fact {
+    min-width: 0;
+    padding: 9px 10px;
+    background: #f5f8f5;
+    border: 1px solid #e6eee7;
+    border-radius: 10px;
+}
+.ficha-fact:first-child, .ficha-fact:last-child { grid-column: 1 / -1; }
+.ficha-fact dt {
+    font-weight: 750;
+    color: #647e6d;
+    letter-spacing: .15px;
+    font-size: 10px;
+    line-height: 1.4;
+    margin: 0 0 3px;
+}
+.ficha-fact dd {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 620;
+    line-height: 1.4;
+    color: #254735;
+    overflow-wrap: anywhere;
+}
+.ficha-fact dd.ficha-pill {
+    display: inline-block;
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: 6px;
+    font-weight: 750;
+}
+.ficha-pill--attention { background: #fdecd5; color: #956218 !important; }
+.ficha-pill--neutral { background: #ebf0da; color: #4f6128 !important; }
+.ficha-pill--positive { background: #e0f4e6; color: #246a40 !important; }
+.ficha-pill--muted { background: #edf1ef; color: #53665a !important; }
+.ficha-disclaimer {
+    color: #718077;
+    font-size: 10px;
+    line-height: 1.45;
+    margin: 8px 0 12px;
+}
+.ficha-unidentified { font-size: 12px; }
+.ficha-actions {
+    display: flex;
+    margin: 8px 0 12px;
+}
+.ficha-directions {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    border-radius: 9px;
+    text-decoration: none !important;
+    background: #2d7855;
+    color: #fff !important;
+    font-size: 12px;
+    font-weight: 740;
+    padding: 9px 14px;
+    box-shadow: 0 3px 8px rgba(32,103,61,.15);
+    transition: background .2s ease;
+}
+.ficha-directions:hover, .ficha-directions:focus { background: #1d5940; }
+.ficha-directions span { font-size: 16px; line-height: 1; }
+.ficha-inventario {
+    margin-top: 8px;
+    border-top: 1px solid #e8eee9;
+    padding-top: 9px;
+}
+.ficha-inventario summary {
+    font-size: 11px;
+    font-weight: 740;
+    color: #2e7653;
+    cursor: pointer;
+    outline-offset: 3px;
+    margin: 0 0 8px;
+}
+.ficha-inventario > table { font-size: 11px !important; margin: 4px 0 0; }
+.ficha-inventario th { width: 50% !important; }
+@media (max-width: 550px) {
+    .leaflet-popup .leaflet-popup-content { margin: 11px 12px 13px; }
+    .ficha-species-img { height: 130px; }
+    .ficha-photo, .ficha-photo-placeholder { min-height: 125px; }
+    .leaflet-popup .ficha-heading h3 { font-size: 17px; }
+}
+
+/* Nombre común visible también debajo del nombre latino en el Top 10. */
+.ranking-common { display: block; font-size: 11px; line-height: 1.4; color: #6d8676; font-weight: 500; margin: -2px 0 3px; }
