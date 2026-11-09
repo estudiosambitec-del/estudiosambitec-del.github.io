@@ -86,7 +86,7 @@
 
         #panelToggle {
             position: absolute;
-            top: 100px;
+            top: 18px;
             left: 18px;
             z-index: 1100;
             border: none;
@@ -104,7 +104,7 @@
 
         #sidePanel {
             position: absolute;
-            top: 145px;
+            top: 63px;
             left: 18px;
             bottom: 18px;
             width: 378px;
@@ -307,6 +307,20 @@
             background: rgba(255,255,255,.96) !important;
         }
 
+        .basemap-transparency-control {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(0,0,0,.12);
+            font-size: 12px;
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 180px;
+        }
+        .basemap-transparency-control label { display: flex; justify-content: space-between; gap: 8px; }
+        .basemap-transparency-control input[type=range] { width: 100%; accent-color: var(--accent, #2b804e); }
+
         .leaflet-control-layers-expanded {
             padding: 12px 14px !important;
             border-radius: 16px !important;
@@ -359,11 +373,11 @@
             #appHeader p { font-size: 12px; }
 
             #panelToggle {
-                top: 92px;
+                top: 12px;
             }
 
             #sidePanel {
-                top: 136px;
+                top: 56px;
                 width: calc(100vw - 36px);
                 max-width: 360px;
             }
@@ -560,8 +574,8 @@
         <title>Visor de arbolado y servicios ecosistémicos</title>
     </head>
     <body>
-        <button id="panelToggle" type="button" aria-controls="sidePanel" aria-expanded="true">Mostrar / ocultar filtros</button>
-        <aside id="sidePanel" class="ui-card">
+        <button id="panelToggle" type="button" aria-controls="sidePanel" aria-expanded="false">Mostrar / ocultar filtros</button>
+        <aside id="sidePanel" class="ui-card collapsed">
             <div class="panel-section">
                 <h2 class="section-title">Buscar zona o viario</h2>
                 <div class="field" style="margin-bottom:0">
@@ -803,6 +817,7 @@
         <script src="js/destinos_zonas_guadix.js"></script>
         <script src="js/fichas_guadix.js"></script>
         <script>
+        if (!document.getElementById('map')) { var _mapDiv = document.createElement('div'); _mapDiv.id = 'map'; document.body.insertBefore(_mapDiv, document.body.firstChild); }
         var map = L.map('map', {
             zoomControl:false, maxZoom:28, minZoom:1
         })
@@ -916,12 +931,11 @@
             maxZoom: 28
         });
         layer_IGN_0;
-        map.addLayer(layer_IGN_0);
         map.createPane('pane_GoogleSatellite_1');
         map.getPane('pane_GoogleSatellite_1').style.zIndex = 401;
         var layer_GoogleSatellite_1 = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
             pane: 'pane_GoogleSatellite_1',
-            opacity: 1.0,
+            opacity: 0.4,
             attribution: '<a href="https://www.google.at/permissions/geoguidelines/attr-guide.html">Map data ©2015 Google</a>',
             minZoom: 1,
             maxZoom: 28,
@@ -929,6 +943,7 @@
             maxNativeZoom: 20
         });
         layer_GoogleSatellite_1;
+        map.addLayer(layer_GoogleSatellite_1);
         function pop_ZONAS_VERDES_GUADIX_2(feature, layer) {
             var popupContent = '<table>\
                     <tr>\
@@ -1178,6 +1193,28 @@
             collapsed: true,
         });
         lay.addTo(map);
+        // Control de transparencia del mapa base (por defecto 60 %)
+        var BASEMAP_DEFAULT_TRANSPARENCY = 60;
+        function setBasemapTransparency(pct) {
+            pct = Math.max(0, Math.min(100, Number(pct) || 0));
+            var opacity = 1 - pct / 100;
+            layer_GoogleSatellite_1.setOpacity(opacity);
+            layer_IGN_0.setOpacity(opacity);
+            var out = document.getElementById('basemapTransparencyValue');
+            if (out) out.textContent = pct + ' %';
+        }
+        (function addTransparencyToLayerControl() {
+            var container = lay.getContainer();
+            var list = container.querySelector('.leaflet-control-layers-list') || container.querySelector('form') || container;
+            var div = L.DomUtil.create('div', 'basemap-transparency-control', list);
+            div.innerHTML = '<label for="basemapTransparency">Transparencia mapa base <strong id="basemapTransparencyValue">' + BASEMAP_DEFAULT_TRANSPARENCY + ' %</strong></label>' +
+                '<input id="basemapTransparency" type="range" min="0" max="100" step="5" value="' + BASEMAP_DEFAULT_TRANSPARENCY + '">';
+            L.DomEvent.disableClickPropagation(div);
+            L.DomEvent.disableScrollPropagation(div);
+            ['mousedown', 'touchstart', 'pointerdown', 'dblclick'].forEach(function(ev) { L.DomEvent.on(div, ev, L.DomEvent.stopPropagation); });
+            div.querySelector('input').addEventListener('input', function() { setBasemapTransparency(this.value); });
+        })();
+        setBasemapTransparency(BASEMAP_DEFAULT_TRANSPARENCY);
         setBounds();
         // Zone autocomplete is initialized below, independently of Leaflet Search.
 
@@ -1490,8 +1527,9 @@
         function syncResponsivePanelPosition() {
             var toggle = document.getElementById('panelToggle');
             var panel = document.getElementById('sidePanel');
-            if (window.innerWidth <= 820) {
-                var headerBottom = document.getElementById('appHeader').getBoundingClientRect().bottom;
+            var appHeader = document.getElementById('appHeader');
+            if (window.innerWidth <= 820 && appHeader) {
+                var headerBottom = appHeader.getBoundingClientRect().bottom;
                 var toggleTop = Math.ceil(headerBottom + 10);
                 toggle.style.top = toggleTop + 'px';
                 panel.style.top = (toggleTop + toggle.offsetHeight + 12) + 'px';
@@ -2017,7 +2055,7 @@
             document.getElementById('sidePanel').addEventListener('scroll', positionZoneSuggestions, { passive: true });
             window.addEventListener('resize', positionZoneSuggestions);
             map.on('movestart', closeZoneSuggestions);
-            setSidePanelOpen(true);
+            setSidePanelOpen(false);
         }
 
         initEnhancedUI();
